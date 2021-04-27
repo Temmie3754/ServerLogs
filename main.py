@@ -17,18 +17,14 @@ import asyncio
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
 guildinfo = conn.cursor()
-modchannels = []
-runningmodchannels = []
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+
 intents = discord.Intents.all()
 intents.members = True
 intents.bans = True
 bot = commands.Bot(command_prefix="%", intents=intents)
-
-formatguide = ["%report", "offender", "offence", "evidence", "type"]
-formatguide2 = ["%report offender", "offence", "evidence", "type"]
 
 bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
                "Other Unwanted Content", "Loli content", "Real child pornography content",
@@ -37,7 +33,11 @@ bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing
 
 imagechannel = bot.get_channel(int(834577801449046046))
 verificationchannel = bot.get_channel(int(834577801449046046))
-botadmins = [415158701331185673]
+
+botadmins = []
+theautobanlist = []
+modchannels = []
+runningmodchannels = []
 
 
 async def updateglogs():
@@ -45,11 +45,13 @@ async def updateglogs():
         sqlcommand = "SELECT * FROM reportList WHERE certified=1"
         guildinfo.execute(sqlcommand)
         recordset = guildinfo.fetchall()
+
         columns = [col[0] for col in guildinfo.description]
         df = pd.DataFrame(recordset, columns=columns)
         if os.path.exists('bandatabase.csv'):
             os.remove('bandatabase.csv')
         df.to_csv(r'bandatabase.csv', index=False)
+
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
         drive = GoogleDrive(gauth)
@@ -68,6 +70,7 @@ async def updateglogs():
                 creds = flow.run_local_server(port=0)
             with open('token.pickle', 'wb') as token:
                 pickle.dump(creds, token)
+
         DRIVE = discovery.build('drive', 'v2', credentials=creds)
         ufile = os.path.basename('bandatabase.csv')
         f = drive.CreateFile({'title': ufile})
@@ -77,8 +80,10 @@ async def updateglogs():
                     "parents": [{"id": '15_KzIzvqfffgr0Z_2PWubDUqrCJBRPCS', "kind": "drive#childList"}]}
         res = DRIVE.files().insert(convert=False, body=metadata,
                                    media_body='bandatabase.csv', fields='mimeType,exportLinks,id').execute()
+
         with open('curdata.txt', 'w', encoding='utf-8') as w:
             w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
+            
         await asyncio.sleep(43200)
 
 
@@ -238,9 +243,6 @@ async def autobanlist(ctx):
     await ctx.channel.send(embed=embed)
 
 
-theautobanlist = []
-
-
 @bot.event
 async def on_ready():
     global imagechannel, verificationchannel, theautobanlist
@@ -263,6 +265,9 @@ async def on_ready():
     rows = guildinfo.fetchall()
     for row in rows:
         theautobanlist.append(int(row[1]))
+    someinfo = await bot.application_info()
+    for member in someinfo.team.members:
+        botadmins.append(member.id)
 
 
 @bot.event
@@ -558,8 +563,9 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         if reason == "Loli content" or reason == "Real child pornography content":
                             evidence = "[Evidence removed due to sensitive content]"
                         await message.edit(embed=newEmbed)
-                        sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,evidence,
-                        banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+                        sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
+                        evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
+                        Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
                         try:
                             guildinfo.execute(sql, (
                                 str(reportname), int(reported[-1]), guild.name, int(guild.id), reason, evidence,
