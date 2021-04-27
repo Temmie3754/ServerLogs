@@ -611,7 +611,10 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     except TimeoutError:
                         await mesg.delete()
                         return
-                    await mesg.delete()
+                    try:
+                        await mesg.delete()
+                    except:
+                        print("oof")
                     if newEmbed.fields[4].value != "None":
                         embed_dict['color'] = 0xf1c40f
                     newEmbed = discord.Embed.from_dict(embed_dict)
