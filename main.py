@@ -439,24 +439,23 @@ async def report(ctx):
         messageline = messageline.replace("@", "")
         messageline = messageline.replace("!", "")
         messageline = messageline.replace(">", "")
-        try:
-            userid = int(messageline)
-            user = bot.get_user(userid)
-            if user is None:
-                await ctx.channel.send("Invalid User ID")
-                return
-            banid = shortuuid.ShortUUID().random(length=22)
-            embed = discord.Embed(title='Report', colour=0xe74c3c)
-            embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
-            embed.add_field(name='Server', value=ctx.guild.name + " - " + str(ctx.guild.id), inline=True)
-            embed.add_field(name='Reason', value="None", inline=False)
-            embed.add_field(name='Evidence', value="None", inline=False)
-            embed.add_field(name='Ban Type', value="None", inline=False)
-            embed.add_field(name='Ban Notes', value="None", inline=False)
-            embed.add_field(name='Ban ID', value=str(banid))
-            embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report " + str(
-                datetime.datetime.now())[:-7]))
-            reacto = await modchannel.send(content="I see you just reported " + str(user) + """
+        userid = int(messageline)
+        user = bot.get_user(userid)
+        if user is None:
+            await ctx.channel.send("Invalid User ID")
+            return
+        banid = shortuuid.ShortUUID().random(length=22)
+        embed = discord.Embed(title='Report', colour=0xe74c3c)
+        embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
+        embed.add_field(name='Server', value=ctx.guild.name + " - " + str(ctx.guild.id), inline=True)
+        embed.add_field(name='Reason', value="None", inline=False)
+        embed.add_field(name='Evidence', value="None", inline=False)
+        embed.add_field(name='Ban Type', value="None", inline=False)
+        embed.add_field(name='Ban Notes', value="None", inline=False)
+        embed.add_field(name='Ban ID', value=str(banid))
+        embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report " + str(
+            datetime.datetime.now())[:-7]))
+        reacto = await modchannel.send(content="I see you just reported " + str(user) + """
 To help us categorize this ban, please do the following:
 Press 🔨 to change ban reason if necessary.
 Press 📷 to add images or links to the evidence.
@@ -464,16 +463,12 @@ Press #️⃣ to select the ban type.
 Press 🗒️ to add ban notes.
 Press ✅ to submit the ban to the database.
 You can press ❌ to cancel.""", embed=embed)
-            await reacto.add_reaction('🔨')
-            await reacto.add_reaction('📷')
-            await reacto.add_reaction('#️⃣')
-            await reacto.add_reaction('🗒️')
-            await reacto.add_reaction('✅')
-            await reacto.add_reaction('❌')
-        except:
-            await ctx.channel.send("Invalid User ID")
-            return
-
+        await reacto.add_reaction('🔨')
+        await reacto.add_reaction('📷')
+        await reacto.add_reaction('#️⃣')
+        await reacto.add_reaction('🗒️')
+        await reacto.add_reaction('✅')
+        await reacto.add_reaction('❌')
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
@@ -528,7 +523,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     def check2(m):
         try:
             int(m.content)
-        except:
+        except TypeError:
             return False
         return 0 < int(m.content) < 20
 
@@ -555,7 +550,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     print(e)
                     print("major error, kill")
                 conn.commit()
-                await banlistupdate(bot.get_user(int(reported[-1])))
+                await banlistupdate(await bot.fetch_user(int(reported[-1])))
             elif payload.emoji.name == '❌':
                 embed_dict['color'] = 0x000000
                 newEmbed = discord.Embed.from_dict(embed_dict)
@@ -589,7 +584,6 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         bantype = newEmbed.fields[4].value
                         bannotes = newEmbed.fields[5].value
                         banid = newEmbed.fields[6].value
-                        reportname = ' '.join(reported[:-2])
                         if reason == "Loli content" or reason == "Real child pornography content":
                             evidence = "[Evidence removed due to sensitive content]"
                         await message.edit(embed=newEmbed)
@@ -640,9 +634,11 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                             msg = await bot.wait_for("message", check=check, timeout=1)
                             tosend = ""
                             for attachment in msg.attachments:
-                                msg2 = await imagechannel.send(content=attachment.url)
+                                await attachment.save(attachment.filename)
+                                msg2 = await imagechannel.send(file=attachment.filename)
+                                os.remove(attachment.filename)
                                 if len(msg.attachments) > 1:
-                                    tosend += msg2.content + "\n"
+                                    tosend += msg2.attachments[0].url + "\n"
                                 tosend += msg2.content
                             newEmbed = discord.Embed.from_dict(embed_dict)
                             if msg.content != "":
