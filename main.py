@@ -33,11 +33,53 @@ formatguide2 = ["%report offender", "offence", "evidence", "type"]
 bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
                "Other Unwanted Content", "Loli content", "Real child pornography content",
                "Sexual advances with minors", "Unwanted NSFW", "Other Sexual Content", "Piracy", "Viruses",
-               "Selling drugs", "Under 18", "Under 13", "Other illegal Content",]
+               "Selling drugs", "Under 18", "Under 13", "Other illegal Content"]
 
 imagechannel = bot.get_channel(int(834577801449046046))
 verificationchannel = bot.get_channel(int(834577801449046046))
 botadmins = [415158701331185673]
+
+
+async def updateglogs():
+    while True:
+        sqlcommand = "SELECT * FROM reportList WHERE certified=1"
+        guildinfo.execute(sqlcommand)
+        recordset = guildinfo.fetchall()
+        columns = [col[0] for col in guildinfo.description]
+        df = pd.DataFrame(recordset, columns=columns)
+        if os.path.exists('bandatabase.csv'):
+            os.remove('bandatabase.csv')
+        df.to_csv(r'bandatabase.csv', index=False)
+        gauth = GoogleAuth()
+        gauth.LocalWebserverAuth()
+        drive = GoogleDrive(gauth)
+
+        scopes = ['https://www.googleapis.com/auth/drive']
+        creds = None
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', scopes, )
+                creds = flow.run_local_server(port=0)
+            with open('token.pickle', 'wb') as token:
+                pickle.dump(creds, token)
+        DRIVE = discovery.build('drive', 'v2', credentials=creds)
+        ufile = os.path.basename('bandatabase.csv')
+        f = drive.CreateFile({'title': ufile})
+        f.SetContentFile('bandatabase.csv')
+        f.Upload()
+        metadata = {'title': ufile,
+                    "parents": [{"id": '15_KzIzvqfffgr0Z_2PWubDUqrCJBRPCS', "kind": "drive#childList"}]}
+        res = DRIVE.files().insert(convert=False, body=metadata,
+                                   media_body='bandatabase.csv', fields='mimeType,exportLinks,id').execute()
+        with open('curdata.txt', 'w', encoding='utf-8') as w:
+            w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
+        await asyncio.sleep(43200)
 
 
 async def fetch_modchan(guild):
@@ -55,43 +97,6 @@ async def banlistupdate(member):
         modchan = await fetch_modchan(guild)
         if modchan is not None:
             await modchan.send("Ban database update for " + str(member), embed=embed)
-    sqlcommand = "SELECT * FROM reportList WHERE certified=1"
-    guildinfo.execute(sqlcommand)
-    recordset = guildinfo.fetchall()
-    columns = [col[0] for col in guildinfo.description]
-    df = pd.DataFrame(recordset, columns=columns)
-    if os.path.exists('bandatabase.csv'):
-        os.remove('bandatabase.csv')
-    df.to_csv(r'bandatabase.csv', index=False)
-    gauth = GoogleAuth()
-    gauth.LocalWebserverAuth()
-    drive = GoogleDrive(gauth)
-
-    scopes = ['https://www.googleapis.com/auth/drive']
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', scopes, )
-            creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    DRIVE = discovery.build('drive', 'v2', credentials=creds)
-    ufile = os.path.basename('bandatabase.csv')
-    f = drive.CreateFile({'title': ufile})
-    f.SetContentFile('bandatabase.csv')
-    f.Upload()
-    metadata = {'title': ufile,
-                "parents": [{"id": '15_KzIzvqfffgr0Z_2PWubDUqrCJBRPCS', "kind": "drive#childList"}]}
-    res = DRIVE.files().insert(convert=False, body=metadata,
-                               media_body='bandatabase.csv', fields='mimeType,exportLinks,id').execute()
-    with open('curdata.txt', 'w', encoding='utf-8') as w:
-        w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
 
 
 async def verifyban(embed, member):
@@ -149,6 +154,13 @@ async def usersearch(embed, user):
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report info " + str(
         datetime.datetime.now())[:-7]))
     return embed
+
+
+@bot.command()
+async def dataupdate(ctx):
+    if ctx.author.id != 415158701331185673:
+        return
+    await updateglogs()
 
 
 @bot.command()
@@ -225,7 +237,9 @@ async def autobanlist(ctx):
                      text=(str(datetime.datetime.now())[:-7]))
     await ctx.channel.send(embed=embed)
 
-theautobanlist=[]
+
+theautobanlist = []
+
 
 @bot.event
 async def on_ready():
@@ -289,6 +303,8 @@ You can press ❌ to cancel.""", embed=embed)
 
 
 bot.remove_command('help')
+
+
 @bot.command()
 async def help(ctx):
     await ctx.channel.send("""List of commands:
@@ -687,7 +703,7 @@ async def on_member_join(member):
     if member.id in theautobanlist:
         guildinfo.execute("SELECT * FROM reportList WHERE reportedUserID=?", member.id)
         rows = guildinfo.fetchall()
-        reason=""
+        reason = ""
         for row in rows:
             reason = str(row[13])
         await member.guild.ban(user=member, reason="Auto community ban")
