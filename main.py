@@ -398,7 +398,7 @@ async def autoban(ctx):
                 abanlist.append(line[1])
             for member in ctx.guild.members:
                 if member.id in abanlist:
-                    await ctx.channel.send("Warning: " + member + " will be banned if you enable the auto ban list")
+                    await ctx.channel.send("Warning: " + str(member) + " will be banned if you enable the auto ban list")
             await ctx.channel.send("Enabling this will allow the bot to auto ban individuals with heinous "
                                    "offences\nDo you want to continue?")
             msg = await bot.wait_for("message", check=check, timeout=120)
