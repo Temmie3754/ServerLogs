@@ -306,7 +306,7 @@ async def on_member_ban(guild, user):
     embed = discord.Embed(title='Report', colour=0xe74c3c)
     embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
     embed.add_field(name='Server', value=guild.name + " - " + str(guild.id), inline=True)
-    embed.add_field(name='Reason', value=logs.reason, inline=False)
+    embed.add_field(name='Reason', value="None", inline=False)
     embed.add_field(name='Evidence', value="None", inline=False)
     embed.add_field(name='Ban Type', value="None", inline=False)
     embed.add_field(name='Ban Notes', value="None", inline=False)
