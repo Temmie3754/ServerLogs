@@ -126,7 +126,8 @@ async def membersearch(embed, member):
     usernote = "None"
     for row in rows:
         usernote = str(row[11])
-        reports += ("Server: " + str(row[2]) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
+        guildname = bot.get_guild(row[3]).name
+        reports += ("Server: " + str(guildname) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
             5] + "\n" + "Ban Type: "
                     + str(row[6]) + "\n" + "Ban Notes: " + row[7] + "\n" + "Time of Ban: " + str(
                     row[8]) + "\n" + "Ban ID: " + str(row[10]) + "\n" + "\n")
@@ -152,7 +153,8 @@ async def usersearch(embed, user):
     usernote = "None"
     for row in rows:
         usernote = str(row[11])
-        reports += ("Server: " + str(row[2]) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
+        guildname = bot.get_guild(row[3]).name
+        reports += ("Server: " + str(guildname) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
             5] + "\n" + "Ban Type: "
                     + str(row[6]) + "\n" + "Ban Notes: " + row[7] + "\n" + "Time of Ban: " + str(
                     row[8]) + "\n" + "Ban ID: " + str(row[10]) + "\n" + "\n")
@@ -252,7 +254,8 @@ async def autobanlist(ctx):
     embed = discord.Embed(title='Auto ban list', colour=0x000000)
     banlist = ""
     for row in rows:
-        banlist += (row[0] + " - " + str(row[1]) + "\n" + "Reason: " + str(row[13]) + "\n" + "\n")
+        user = await bot.fetch_user(row[1])
+        banlist += (str(user) + " - " + str(row[1]) + "\n" + "Reason: " + str(row[13]) + "\n" + "\n")
     embed.add_field(name="Users", value=banlist)
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png',
                      text=(str(datetime.datetime.now())[:-7]))
@@ -596,7 +599,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
                         try:
                             guildinfo.execute(sql, (
-                                str(reportname), int(reported[-1]), guild.name, int(guild.id), reason, evidence,
+                                "Removed for GDPR", int(reported[-1]), "Removed for GDPR", int(guild.id), reason, evidence,
                                 bantype,
                                 bannotes, str(datetime.datetime.now())[:-7], int(0), banid, "None", int(0), "None"))
                         except Exception as e:
@@ -604,7 +607,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                             print("major error, kill")
                         conn.commit()
                         guildinfo.close()
-                        await verifyban(newEmbed, bot.get_user(int(reported[-1])))
+                        await verifyban(newEmbed, await bot.fetch_user(int(reported[-1])))
                     else:
                         await channel.send("Please enter the ban type and ban reason before submitting")
                 elif payload.emoji.name == '🔨':
