@@ -16,7 +16,6 @@ import asyncio
 
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
-guildinfo = conn.cursor()
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -42,6 +41,7 @@ runningmodchannels = []
 
 async def updateglogs():
     while True:
+        guildinfo = conn.cursor()
         sqlcommand = "SELECT * FROM reportList WHERE certified=1"
         guildinfo.execute(sqlcommand)
         recordset = guildinfo.fetchall()
@@ -51,6 +51,7 @@ async def updateglogs():
         if os.path.exists('bandatabase.csv'):
             os.remove('bandatabase.csv')
         df.to_csv(r'bandatabase.csv', index=False)
+        guildinfo.close()
 
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
@@ -83,16 +84,18 @@ async def updateglogs():
 
         with open('curdata.txt', 'w', encoding='utf-8') as w:
             w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
-            
+
         await asyncio.sleep(43200)
 
 
 async def fetch_modchan(guild):
+    guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo")
     rows = guildinfo.fetchall()
     for row in rows:
         if row[1] == guild.id:
             return bot.get_channel(row[2])
+    guildinfo.close()
 
 
 async def banlistupdate(member):
@@ -115,6 +118,7 @@ async def verifyban(embed, member):
 
 
 async def membersearch(embed, member):
+    guildinfo = conn.cursor()
     sqlcommand = "SELECT * FROM reportList WHERE reportedUserID=? AND certified=1"
     guildinfo.execute(sqlcommand, (member.id,))
     rows = guildinfo.fetchall()
@@ -135,10 +139,12 @@ async def membersearch(embed, member):
         embed.add_field(name='Reports for member', value='Member has no reports', inline=False)
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report info " + str(
         datetime.datetime.now())[:-7]))
+    guildinfo.close()
     return embed
 
 
 async def usersearch(embed, user):
+    guildinfo = conn.cursor()
     sqlcommand = "SELECT * FROM reportList WHERE reportedUserID=? AND certified=1"
     guildinfo.execute(sqlcommand, (user.id,))
     rows = guildinfo.fetchall()
@@ -158,6 +164,7 @@ async def usersearch(embed, user):
         embed.add_field(name='Reports for user', value='User has no reports', inline=False)
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report info " + str(
         datetime.datetime.now())[:-7]))
+    guildinfo.close()
     return embed
 
 
@@ -174,14 +181,17 @@ async def remove(ctx, arg):
         return
     if ctx.author.id not in botadmins:
         return
+    guildinfo = conn.cursor()
     try:
         guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(2), str(arg)))
     except Exception as e:
         print(e)
         await ctx.channel.send("Ban ID not found")
+        guildinfo.close()
         return
     await ctx.channel.send("Ban removal successful")
     conn.commit()
+    guildinfo.close()
 
 
 @bot.command()
@@ -190,15 +200,18 @@ async def note(ctx, arg, *args):
         return
     if ctx.author.id not in botadmins:
         return
-    note = (" ".join(args[:])).strip()
+    noted = (" ".join(args[:])).strip()
+    guildinfo = conn.cursor()
     try:
-        guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (str(note), int(arg)))
+        guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (str(noted), int(arg)))
     except Exception as e:
         print(e)
         await ctx.channel.send("User ID not found")
+        guildinfo.close()
         return
     await ctx.channel.send("User note successful")
     conn.commit()
+    guildinfo.close()
 
 
 @bot.command()
@@ -216,11 +229,13 @@ async def communityban(ctx, arg, *args):
     if user is None:
         await ctx.channel.send("User ID could not be found")
         return
+    guildinfo = conn.cursor()
     guildinfo.execute("UPDATE reportList SET autoBan=1, autoBanReason=? WHERE reportedUserID=?", (reason, user.id))
     conn.commit()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE autoBan=1")
     rows = guildinfo.fetchall()
     theautobanlist.append(user.id)
+    guildinfo.close()
     for row in rows:
         guild = bot.get_guild(int(row[1]))
         modchan = await fetch_modchan(guild)
@@ -231,6 +246,7 @@ async def communityban(ctx, arg, *args):
 @bot.command()
 @commands.has_permissions(ban_members=True)
 async def autobanlist(ctx):
+    guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
     rows = guildinfo.fetchall()
     embed = discord.Embed(title='Auto ban list', colour=0x000000)
@@ -240,12 +256,14 @@ async def autobanlist(ctx):
     embed.add_field(name="Users", value=banlist)
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png',
                      text=(str(datetime.datetime.now())[:-7]))
+    guildinfo.close()
     await ctx.channel.send(embed=embed)
 
 
 @bot.event
 async def on_ready():
     global imagechannel, verificationchannel, theautobanlist
+    guildinfo = conn.cursor()
     print(f'{bot.user} has connected to Discord!')
     for guild in bot.guilds:
         print(f'Connected to {guild.name}')
@@ -268,6 +286,7 @@ async def on_ready():
     someinfo = await bot.application_info()
     for member in someinfo.team.members:
         botadmins.append(member.id)
+    guildinfo.close()
 
 
 @bot.event
@@ -333,6 +352,7 @@ async def data(ctx):
 @commands.has_permissions(administrator=True)
 async def setmodchannel(ctx):
     print(f'Connected to {ctx.guild.name}')
+    guildinfo = conn.cursor()
     sqlcommand = """DELETE FROM guildsInfo WHERE guildID=?"""
     try:
         guildinfo.execute(sqlcommand, (ctx.guild.id,))
@@ -350,6 +370,7 @@ async def setmodchannel(ctx):
         modchannels.append(bot.get_channel(row[2]))
         runningmodchannels.append(0)
     await ctx.channel.send("Set channel to " + str(ctx.channel))
+    guildinfo.close()
 
 
 @bot.command()
@@ -358,6 +379,7 @@ async def autoban(ctx):
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
         return
+    guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE guildID=?", (int(ctx.guild.id),))
     rows = guildinfo.fetchall()
     for row in rows:
@@ -384,14 +406,17 @@ async def autoban(ctx):
                 guildinfo.execute("UPDATE guildsInfo SET autoBan=1 WHERE guildID=?", (int(ctx.guild.id),))
                 await ctx.channel.send("Autoban list turned on")
                 conn.commit()
+                guildinfo.close()
                 return
             else:
                 await ctx.channel.send("Autoban list turned off")
+                guildinfo.close()
                 return
         elif row[3] == 1:
             guildinfo.execute("UPDATE guildsInfo SET autoBan=0 WHERE guildID=?", (int(ctx.guild.id),))
             await ctx.channel.send("Autoban list turned off")
             conn.commit()
+            guildinfo.close()
             return
 
 
@@ -514,6 +539,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         if embed_dict['color'] == 0x00FF00 or embed_dict['color'] == 0x000000:
             return
         if channel == verificationchannel:
+            guildinfo = conn.cursor()
             if payload.emoji.name == '✅':
                 embed_dict['color'] = 0x00FF00
                 newEmbed = discord.Embed.from_dict(embed_dict)
@@ -538,6 +564,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     print(e)
                     print("major error, kill")
                 conn.commit()
+            guildinfo.close()
         else:
             if not user.guild_permissions.ban_members:
                 await channel.send(user.name + " you do not have permission to perform that action")
@@ -563,6 +590,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         if reason == "Loli content" or reason == "Real child pornography content":
                             evidence = "[Evidence removed due to sensitive content]"
                         await message.edit(embed=newEmbed)
+                        guildinfo = conn.cursor()
                         sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                         evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                         Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
@@ -575,6 +603,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                             print(e)
                             print("major error, kill")
                         conn.commit()
+                        guildinfo.close()
                         await verifyban(newEmbed, bot.get_user(int(reported[-1])))
                     else:
                         await channel.send("Please enter the ban type and ban reason before submitting")
@@ -707,6 +736,7 @@ async def on_member_join(member):
     if modchannel is None:
         return
     if member.id in theautobanlist:
+        guildinfo = conn.cursor()
         guildinfo.execute("SELECT * FROM reportList WHERE reportedUserID=?", member.id)
         rows = guildinfo.fetchall()
         reason = ""
@@ -714,6 +744,7 @@ async def on_member_join(member):
             reason = str(row[13])
         await member.guild.ban(user=member, reason="Auto community ban")
         await modchannel.send("Community Ban: " + str(member) + " - " + str(member.id) + " for " + reason)
+        guildinfo.close()
     embed = discord.Embed(title='New member joined', color=0xfffffe)
     embed = await membersearch(embed, member)
     reacto = await modchannel.send(embed=embed)
