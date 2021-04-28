@@ -45,7 +45,8 @@ async def updateglogs():
         sqlcommand = "SELECT * FROM reportList WHERE certified=1"
         guildinfo.execute(sqlcommand)
         recordset = guildinfo.fetchall()
-
+        for row in recordset:
+            row[0] = await bot.fetch_user(row[1])
         columns = [col[0] for col in guildinfo.description]
         df = pd.DataFrame(recordset, columns=columns)
         if os.path.exists('bandatabase.csv'):
@@ -73,6 +74,10 @@ async def updateglogs():
                 pickle.dump(creds, token)
 
         DRIVE = discovery.build('drive', 'v2', credentials=creds)
+        with open('curdata.txt', 'r', encoding='utf-8') as w:
+            fileDelete = w.read()
+        fileDelete = fileDelete.replace("https://docs.google.com/spreadsheets/d/", "")
+        file = DRIVE.files().delete(fileId=fileDelete).execute()
         ufile = os.path.basename('bandatabase.csv')
         f = drive.CreateFile({'title': ufile})
         f.SetContentFile('bandatabase.csv')
@@ -85,7 +90,7 @@ async def updateglogs():
         with open('curdata.txt', 'w', encoding='utf-8') as w:
             w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
 
-        await asyncio.sleep(43200)
+        await asyncio.sleep(86400)
 
 
 async def fetch_modchan(guild):
