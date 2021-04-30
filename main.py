@@ -14,6 +14,7 @@ import pandas as pd
 import pickle
 import asyncio
 
+
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
 
@@ -45,8 +46,7 @@ async def updateglogs():
         sqlcommand = "SELECT * FROM reportList WHERE certified=1"
         guildinfo.execute(sqlcommand)
         recordset = guildinfo.fetchall()
-        for row in recordset:
-            row[0] = await bot.fetch_user(row[1])
+
         columns = [col[0] for col in guildinfo.description]
         df = pd.DataFrame(recordset, columns=columns)
         if os.path.exists('bandatabase.csv'):
@@ -74,10 +74,6 @@ async def updateglogs():
                 pickle.dump(creds, token)
 
         DRIVE = discovery.build('drive', 'v2', credentials=creds)
-        with open('curdata.txt', 'r', encoding='utf-8') as w:
-            fileDelete = w.read()
-        fileDelete = fileDelete.replace("https://docs.google.com/spreadsheets/d/", "")
-        file = DRIVE.files().delete(fileId=fileDelete).execute()
         ufile = os.path.basename('bandatabase.csv')
         f = drive.CreateFile({'title': ufile})
         f.SetContentFile('bandatabase.csv')
@@ -90,7 +86,7 @@ async def updateglogs():
         with open('curdata.txt', 'w', encoding='utf-8') as w:
             w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
 
-        await asyncio.sleep(86400)
+        await asyncio.sleep(43200)
 
 
 async def fetch_modchan(guild):
@@ -528,7 +524,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     def check2(m):
         try:
             int(m.content)
-        except TypeError:
+        except ValueError:
             return False
         return 0 < int(m.content) < 20
 
@@ -643,11 +639,13 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                             tosend = ""
                             for attachment in msg.attachments:
                                 await attachment.save(attachment.filename)
-                                msg2 = await imagechannel.send(file=attachment.filename)
+                                msg2 = await imagechannel.send(file=discord.File(attachment.filename))
                                 os.remove(attachment.filename)
                                 if len(msg.attachments) > 1:
                                     tosend += msg2.attachments[0].url + "\n"
-                                tosend += msg2.content
+                                else:
+                                    tosend = msg2.attachments[0].url
+                                print(tosend)
                             newEmbed = discord.Embed.from_dict(embed_dict)
                             if msg.content != "":
                                 msg.content += "\n"
@@ -658,7 +656,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                                                       value=newEmbed.fields[3].value + "\n" + msg.content + tosend,
                                                       inline=False)
                             await message.edit(embed=newEmbed)
-                        except:
+                        except Exception as e:
                             if runningmodchannels[modchannels.index(channel)] == 0:
                                 break
                     await mesg.delete()
