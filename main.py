@@ -100,7 +100,7 @@ async def fetch_modchan(guild):
 
 
 async def banlistupdate(member):
-    embed = discord.Embed(title='Ban database update')
+    embed = discord.Embed(title='Ban database update', color=0xFFFFFE)
     embed = await membersearch(embed, member)
     for guild in bot.guilds:
         modchan = await fetch_modchan(guild)
@@ -441,7 +441,7 @@ async def report(ctx):
         messageline = messageline.replace("!", "")
         messageline = messageline.replace(">", "")
         userid = int(messageline)
-        user = bot.get_user(userid)
+        user = await bot.fetch_user(userid)
         if user is None:
             await ctx.channel.send("Invalid User ID")
             return
