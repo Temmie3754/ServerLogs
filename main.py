@@ -591,7 +591,6 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         banid = newEmbed.fields[6].value
                         if reason == "Loli content" or reason == "Real child pornography content":
                             evidence = "[Evidence removed due to sensitive content]"
-                        await message.edit(embed=newEmbed)
                         guildinfo = conn.cursor()
                         sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                         evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
@@ -608,6 +607,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         conn.commit()
                         guildinfo.close()
                         await verifyban(newEmbed, await bot.fetch_user(int(reported[-1])))
+                        newEmbed = discord.Embed(title="Report submitted", color=0x00FF00)
+                        await message.edit(content="_ _", embed=newEmbed)
                     else:
                         await channel.send("Please enter the ban type and ban reason before submitting")
                 elif payload.emoji.name == '🔨':
@@ -710,9 +711,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     newEmbed.set_field_at(5, name='Ban Notes', value=msg.content, inline=False)
                     await message.edit(embed=newEmbed)
                 elif payload.emoji.name == '❌':
-                    embed_dict['color'] = 0x000000
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    await message.edit(embed=newEmbed)
+                    newEmbed = discord.Embed(title="Report cancelled", color=0x000000)
+                    await message.edit(content="_ _", embed=newEmbed)
             elif newEmbed.fields[0].name == "Member" or newEmbed.fields[0].name == "User":
                 if payload.emoji.name == '✅':
                     embed_dict['color'] = 0x00FF00
