@@ -14,7 +14,6 @@ import pandas as pd
 import pickle
 import asyncio
 
-
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
 
@@ -29,7 +28,7 @@ bot = commands.Bot(command_prefix="%", intents=intents)
 bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
                "Other Unwanted Content", "Loli content", "Real child pornography content",
                "Sexual advances with minors", "Unwanted NSFW", "Other Sexual Content", "Piracy", "Viruses",
-               "Selling drugs", "Under 18", "Under 13", "Other illegal Content"]
+               "Selling drugs", "Under 18", "Under 13", "Other"]
 
 imagechannel = bot.get_channel(int(834577801449046046))
 verificationchannel = bot.get_channel(int(834577801449046046))
@@ -46,7 +45,10 @@ async def updateglogs():
         sqlcommand = "SELECT * FROM reportList WHERE certified=1"
         guildinfo.execute(sqlcommand)
         recordset = guildinfo.fetchall()
-
+        for i in range(len(recordset)):
+            row = list(recordset[i])
+            row[0] = await bot.fetch_user(row[1])
+            recordset[i] = tuple(row)
         columns = [col[0] for col in guildinfo.description]
         df = pd.DataFrame(recordset, columns=columns)
         if os.path.exists('bandatabase.csv'):
@@ -85,7 +87,6 @@ async def updateglogs():
 
         with open('curdata.txt', 'w', encoding='utf-8') as w:
             w.write(str('https://docs.google.com/spreadsheets/d/' + res.get('id')))
-
         await asyncio.sleep(43200)
 
 
@@ -174,6 +175,7 @@ async def usersearch(embed, user):
 @bot.command()
 async def dataupdate(ctx):
     if ctx.author.id != 415158701331185673:
+        print("death")
         return
     await updateglogs()
 
@@ -399,7 +401,8 @@ async def autoban(ctx):
                 abanlist.append(line[1])
             for member in ctx.guild.members:
                 if member.id in abanlist:
-                    await ctx.channel.send("Warning: " + str(member) + " will be banned if you enable the auto ban list")
+                    await ctx.channel.send(
+                        "Warning: " + str(member) + " will be banned if you enable the auto ban list")
             await ctx.channel.send("Enabling this will allow the bot to auto ban individuals with heinous "
                                    "offences\nDo you want to continue?")
             msg = await bot.wait_for("message", check=check, timeout=120)
@@ -470,6 +473,7 @@ You can press ❌ to cancel.""", embed=embed)
         await reacto.add_reaction('🗒️')
         await reacto.add_reaction('✅')
         await reacto.add_reaction('❌')
+
 
 @bot.command()
 @commands.has_permissions(ban_members=True)
@@ -594,7 +598,8 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
                         try:
                             guildinfo.execute(sql, (
-                                "Removed for GDPR", int(reported[-1]), "Removed for GDPR", int(guild.id), reason, evidence,
+                                "Removed for GDPR", int(reported[-1]), "Removed for GDPR", int(guild.id), reason,
+                                evidence,
                                 bantype,
                                 bannotes, str(datetime.datetime.now())[:-7], int(0), banid, "None", int(0), "None"))
                         except Exception as e:
@@ -681,7 +686,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
 16 - Selling drugs
 17 - Under 18
 18 - Under 13
-19 - Other illegal Content""")
+19 - Other""")
                     try:
                         msg = await bot.wait_for("message", check=check2, timeout=60)
                     except TimeoutError:
