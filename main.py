@@ -716,7 +716,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                 elif payload.emoji.name == '❌':
                     embed_dict['color'] = 0x000000
                     newEmbed = discord.Embed.from_dict(embed_dict)
-                    user2 = bot.get_user(int(newEmbed.fields[0].value.split()[2]))
+                    user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
                     try:
                         await guild.kick(user=user2, reason="Failed verification")
                     except PermissionError:
@@ -726,7 +726,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                 elif payload.emoji.name == '☠':
                     embed_dict['color'] = 0x000000
                     newEmbed = discord.Embed.from_dict(embed_dict)
-                    user2 = bot.get_user(int(newEmbed.fields[0].value.split()[2]))
+                    user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
                     try:
                         await guild.ban(user=user2, reason="Failed verification")
                     except PermissionError:
