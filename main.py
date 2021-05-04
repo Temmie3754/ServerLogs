@@ -597,7 +597,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
                         try:
                             guildinfo.execute(sql, (
-                                "Removed for GDPR", int(reported[-1]), "Removed for GDPR", int(guild.id), reason,
+                                "PII removed", int(reported[-1]), "PII removed", int(guild.id), reason,
                                 evidence,
                                 bantype,
                                 bannotes, str(datetime.datetime.now())[:-7], int(0), banid, "None", int(0), "None"))
@@ -638,8 +638,6 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     await message.edit(embed=newEmbed)
                     embed_dict = newEmbed.to_dict()
                     while True:
-                        # it works, needs changes to download messages and then upload to ensure they are saved
-                        # might have some bug somewhere, haven't checked yet, but it doesn't impact the user
                         try:
                             msg = await bot.wait_for("message", check=check, timeout=1)
                             tosend = ""
@@ -662,7 +660,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                                                       value=newEmbed.fields[3].value + "\n" + msg.content + tosend,
                                                       inline=False)
                             await message.edit(embed=newEmbed)
-                        except Exception as e:
+                        except:
                             if runningmodchannels[modchannels.index(channel)] == 0:
                                 break
                     await mesg.delete()
