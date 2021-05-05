@@ -103,7 +103,15 @@ async def fetch_modchan(guild):
 async def banlistupdate(member):
     embed = discord.Embed(title='Ban database update', color=0xFFFFFE)
     embed = await membersearch(embed, member)
+    guildinfo = conn.cursor()
+    guildinfo.execute("SELECT * FROM guildsInfo WHERE updates=1")
+    rows = guildinfo.fetchall()
+    guildsupdate=[]
+    for row in rows:
+        guildsupdate.append(row[1])
     for guild in bot.guilds:
+        if guild.id not in guildsupdate:
+            return
         modchan = await fetch_modchan(guild)
         if modchan is not None:
             await modchan.send("Ban database update for " + str(member), embed=embed)
@@ -365,8 +373,8 @@ async def setmodchannel(ctx):
         conn.commit()
     except:
         print("expected fail")
-    sqlcommand = """INSERT INTO guildsInfo (guildName,guildID,modChannelID,autoBan) Values(?,?,?,?)"""
-    guildinfo.execute(sqlcommand, (ctx.guild.name, ctx.guild.id, ctx.channel.id, int(0)))
+    sqlcommand = """INSERT INTO guildsInfo (guildName,guildID,modChannelID,autoBan,updates) Values(?,?,?,?,?)"""
+    guildinfo.execute(sqlcommand, (ctx.guild.name, ctx.guild.id, ctx.channel.id, int(0), int(1)))
     conn.commit()
     guildinfo.execute("SELECT * FROM guildsInfo")
     rows = guildinfo.fetchall()
@@ -377,6 +385,25 @@ async def setmodchannel(ctx):
         runningmodchannels.append(0)
     await ctx.channel.send("Set channel to " + str(ctx.channel))
     guildinfo.close()
+
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def toggleupdates(ctx):
+    modchannel = await fetch_modchan(ctx.guild)
+    if modchannel is None:
+        await ctx.channel.send("You need to set the mod channel with %setmodchannel to use that")
+        return
+    guildinfo = conn.cursor()
+    guildinfo.execute("SELECT * FROM guildsInfo WHERE guildID=?", (int(ctx.guild.id),))
+    row = guildinfo.fetchone()
+    if row[4] == 1:
+        guildinfo.execute("UPDATE guildsInfo SET updates=0 WHERE guildID=?", (int(ctx.guild.id),))
+        await ctx.channel.send("Database updates turned off")
+    else:
+        guildinfo.execute("UPDATE guildsInfo SET updates=1 WHERE guildID=?", (int(ctx.guild.id),))
+        await ctx.channel.send("Database updates turned on")
+
 
 
 @bot.command()
@@ -432,7 +459,7 @@ async def autoban(ctx):
 async def report(ctx):
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        ctx.channel.send("You need to set the mod channel with %setmodchannel to use that")
+        await ctx.channel.send("You need to set the mod channel with %setmodchannel to use that")
         return
     if str(ctx.message.content).lower().strip() == "%report":
         await ctx.channel.send("Use `%report userid` to file a report for a user")
