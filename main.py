@@ -208,6 +208,49 @@ async def remove(ctx, arg):
 
 
 @bot.command()
+async def alt(ctx, arg, arg2):
+    if ctx.channel != verificationchannel:
+        return
+    if ctx.author.id not in botadmins:
+        return
+    try:
+        userid1 = int(arg)
+        userid2 = int(arg2)
+    except:
+        await ctx.chennel.send("Incorrect User ID")
+        return
+    username1 = await bot.fetch_user(userid1)
+    username2 = await bot.fetch_user(userid2)
+    if username1 is None or username2 is None:
+        await ctx.channel.send("Incorrect user ID")
+        return
+    guildinfo = conn.cursor()
+    sqlcommand = "SELECT * FROM reportList WHERE reportedUserID=? AND certified=1"
+    guildinfo.execute(sqlcommand, (userid1,))
+    user1bans = guildinfo.fetchall()
+    guildinfo.execute(sqlcommand, (userid2,))
+    user2bans = guildinfo.fetchall()
+    if len(user1bans) != 0:
+        for row in user1bans:
+            sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
+                                    evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
+                                    Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+            guildinfo.execute(sql, ("PII removed", int(userid2), "PII removed", int(row[3]), row[4], row[5], row[6],
+                    row[7], row[8], row[9], row[10], row[11], row[12], row[14]))
+    if len(user2bans) != 0:
+        for row in user2bans:
+            sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
+                                    evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
+                                    Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+            guildinfo.execute(sql, ("PII removed", int(userid1), "PII removed", int(row[3]), row[4], row[5], row[6],
+                    row[7], row[8], row[9], row[10], row[11], row[12], row[14]))
+    if len(user1bans) == 0 and len(user2bans) == 0:
+        await ctx.channel.send("Could not find any bans on record for these users, did you enter the IDs incorrectly?")
+    else:
+        await ctx.channel.send("Alt update successful")
+
+
+@bot.command()
 async def note(ctx, arg, *args):
     if ctx.channel != verificationchannel:
         return
@@ -653,6 +696,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         embed_dict['color'] = 0xf1c40f
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(2, name='Reason', value=msg.content, inline=False)
+                    await msg.delete()
                     await message.edit(embed=newEmbed)
                 elif payload.emoji.name == '📷':
                     runningmodchannels[modchannels.index(channel)] = 1
@@ -687,6 +731,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                                                       value=newEmbed.fields[3].value + "\n" + msg.content + tosend,
                                                       inline=False)
                             await message.edit(embed=newEmbed)
+                            await msg.delete()
                         except:
                             if runningmodchannels[modchannels.index(channel)] == 0:
                                 break
@@ -724,6 +769,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(4, name='Ban Type', value=bantypelist[int(msg.content) - 1], inline=False)
                     await message.edit(embed=newEmbed)
+                    await msg.delete()
                 elif payload.emoji.name == '🗒️':
                     mesg = await channel.send('Enter ban notes')
                     try:
@@ -735,6 +781,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(5, name='Ban Notes', value=msg.content, inline=False)
                     await message.edit(embed=newEmbed)
+                    await msg.delete()
                 elif payload.emoji.name == '❌':
                     newEmbed = discord.Embed(title="Report cancelled", color=0x000000)
                     await message.edit(content="_ _", embed=newEmbed)
