@@ -230,23 +230,32 @@ async def alt(ctx, arg, arg2):
     user1bans = guildinfo.fetchall()
     guildinfo.execute(sqlcommand, (userid2,))
     user2bans = guildinfo.fetchall()
+
     if len(user1bans) != 0:
+        notetodo = "Alt of " + str(username1) + " - " + str(userid1)
         for row in user1bans:
+            if row[11] != "None":
+                notetodo = "\n" + notetodo
             sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid2), "PII removed", int(row[3]), row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11], row[12], row[14]))
+                    row[7], row[8], row[9], row[10], row[11]+notetodo, row[12], row[14]))
     if len(user2bans) != 0:
+        notetodo = "Alt of " + str(username2) + " - " + str(userid2)
         for row in user2bans:
+            if row[11] != "None":
+                notetodo = "\n" + notetodo
             sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid1), "PII removed", int(row[3]), row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11], row[12], row[14]))
+                    row[7], row[8], row[9], row[10], row[11]+notetodo, row[12], row[14]))
     if len(user1bans) == 0 and len(user2bans) == 0:
         await ctx.channel.send("Could not find any bans on record for these users, did you enter the IDs incorrectly?")
     else:
+        conn.commit()
+        guildinfo.close()
         await ctx.channel.send("Alt update successful")
 
 
