@@ -378,8 +378,9 @@ async def on_member_ban(guild, user):
         datetime.datetime.now())[:-7]))
     reacto = await modchannel.send(content="I see you just banned " + str(user) + """
 To help us categorize this ban, please do the following:
-Press 🔨 to change ban reason if necessary.
+Press 🔨 to set the ban reason.
 Press 📷 to add images or links to the evidence.
+Press 📸 to erase evidence.
 Press #️⃣ to select the ban type.
 Press 🗒️ to add ban notes.
 Press ✅ to submit the ban to the database.
@@ -540,8 +541,9 @@ async def report(ctx):
             datetime.datetime.now())[:-7]))
         reacto = await modchannel.send(content="I see you just reported " + str(user) + """
 To help us categorize this ban, please do the following:
-Press 🔨 to change ban reason if necessary.
+Press 🔨 to set the ban reason.
 Press 📷 to add images or links to the evidence.
+Press 📸 to erase evidence.
 Press #️⃣ to select the ban type.
 Press 🗒️ to add ban notes.
 Press ✅ to submit the ban to the database.
@@ -686,7 +688,6 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                         conn.commit()
                         guildinfo.close()
                         await verifyban(newEmbed, await bot.fetch_user(int(reported[-1])))
-                        newEmbed = discord.Embed(title="Report submitted", color=0x00FF00)
                         await message.edit(content="_ _", embed=newEmbed)
                     else:
                         await channel.send("Please enter the ban type and ban reason before submitting")
@@ -745,7 +746,11 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                             if runningmodchannels[modchannels.index(channel)] == 0:
                                 break
                     await mesg.delete()
-
+                elif payload.emoji.name == '📸':
+                    embed_dict['color'] = 0xe74c3c
+                    newEmbed = discord.Embed.from_dict(embed_dict)
+                    newEmbed.set_field_at(3, name='Evidence', value="None", inline=False)
+                    await message.edit(embed=newEmbed)
                 elif payload.emoji.name == '#️⃣':
                     mesg = await channel.send("""Enter the ban type:
 1 - Harassing
