@@ -13,6 +13,7 @@ from pydrive.drive import GoogleDrive
 import pandas as pd
 import pickle
 import asyncio
+from discord.ext.commands import MissingPermissions
 
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
@@ -847,6 +848,14 @@ async def on_member_join(member):
     await reacto.add_reaction('✅')
     await reacto.add_reaction('❌')
     await reacto.add_reaction('☠')
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, MissingPermissions):
+        await ctx.send("You are missing permission(s) to run this command.")
+    else:
+        raise error
 
 
 bot.run(TOKEN)
