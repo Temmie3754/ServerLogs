@@ -853,7 +853,7 @@ async def on_member_join(member):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, MissingPermissions):
-        await ctx.send("You are missing permission(s) to run this command.")
+        await ctx.send("You do not have the permissions to use that command.")
     else:
         raise error
 
