@@ -853,7 +853,9 @@ async def on_member_join(member):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, MissingPermissions):
-        await ctx.send("You do not have the permissions to use that command.")
+        await ctx.channel.send("You do not have the permissions to use that command.")
+    elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
+        return
     else:
         raise error
 
