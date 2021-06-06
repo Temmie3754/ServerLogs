@@ -305,7 +305,7 @@ async def communityban(ctx, arg, *args):
     for row in rows:
         guild = bot.get_guild(int(row[1]))
         modchan = await fetch_modchan(guild)
-        await guild.ban(user=user, reason=str(reason))
+        await guild.ban(user=user, reason=str(reason), delete_message_days=0)
         await modchan.send("Community Ban: " + str(user) + " - " + str(user.id) + " for " + reason)
 
 
@@ -490,7 +490,7 @@ async def autoban(ctx):
             if msg.content.lower() == "y" or msg.content.lower() == "yes":
                 for row2 in rows2:
                     banuser = await bot.fetch_user(row2[1])
-                    await ctx.guild.ban(user=banuser, reason=str(row2[13]))
+                    await ctx.guild.ban(user=banuser, reason=str(row2[13]), delete_message_days=0)
                 guildinfo.execute("UPDATE guildsInfo SET autoBan=1 WHERE guildID=?", (int(ctx.guild.id),))
                 await ctx.channel.send("Autoban list turned on")
                 conn.commit()
@@ -602,7 +602,11 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     user = guild.get_member(payload.user_id)
     if user == bot.user:
         return
-    message = await channel.fetch_message(payload.message_id)
+    try:
+        message = await channel.fetch_message(payload.message_id)
+    except:
+        print("unknown error")
+        return
 
     def check(m):
         return m.author.id == user.id and m.channel == channel
@@ -820,7 +824,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
                     try:
-                        await guild.ban(user=user2, reason="Failed verification")
+                        await guild.ban(user=user2, reason="Failed verification", delete_message_days=0)
                     except PermissionError:
                         await channel.send("I don't have permissions to ban that user")
                     await message.edit(embed=newEmbed)
@@ -839,7 +843,7 @@ async def on_member_join(member):
         reason = ""
         for row in rows:
             reason = str(row[13])
-        await member.guild.ban(user=member, reason="Auto community ban")
+        await member.guild.ban(user=member, reason="Auto community ban", delete_message_days=0)
         await modchannel.send("Community Ban: " + str(member) + " - " + str(member.id) + " for " + reason)
         guildinfo.close()
     embed = discord.Embed(title='New member joined', color=0xfffffe)
