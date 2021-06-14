@@ -14,6 +14,11 @@ import pandas as pd
 import pickle
 import asyncio
 from discord.ext.commands import MissingPermissions
+from discord_slash import SlashCommand, SlashContext
+from discord_slash.utils.manage_commands import create_permission
+from discord_slash.model import SlashCommandPermissionType
+from discord_slash.utils.manage_commands import create_option
+
 
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
@@ -25,6 +30,7 @@ intents = discord.Intents.all()
 intents.members = True
 intents.bans = True
 bot = commands.Bot(command_prefix="%", intents=intents)
+slash = SlashCommand(bot, sync_commands=True)
 
 bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
                "Other Unwanted Content", "Loli content", "Real child pornography content",
@@ -107,7 +113,7 @@ async def banlistupdate(member):
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE updates=1")
     rows = guildinfo.fetchall()
-    guildsupdate=[]
+    guildsupdate = []
     for row in rows:
         guildsupdate.append(row[1])
     for guild in bot.guilds:
@@ -241,7 +247,7 @@ async def alt(ctx, arg, arg2):
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid2), "PII removed", int(row[3]), row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11]+notetodo, row[12], row[14]))
+                                    row[7], row[8], row[9], row[10], row[11] + notetodo, row[12], row[14]))
     if len(user2bans) != 0:
         notetodo = "Alt of " + str(username2) + " - " + str(userid2)
         for row in user2bans:
@@ -251,7 +257,7 @@ async def alt(ctx, arg, arg2):
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid1), "PII removed", int(row[3]), row[4], row[5], row[6],
-                    row[7], row[8], row[9], row[10], row[11]+notetodo, row[12], row[14]))
+                                    row[7], row[8], row[9], row[10], row[11] + notetodo, row[12], row[14]))
     if len(user1bans) == 0 and len(user2bans) == 0:
         await ctx.channel.send("Could not find any bans on record for these users, did you enter the IDs incorrectly?")
     else:
@@ -309,31 +315,19 @@ async def communityban(ctx, arg, *args):
         await modchan.send("Community Ban: " + str(user) + " - " + str(user.id) + " for " + reason)
 
 
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def autobanlist(ctx):
-    guildinfo = conn.cursor()
-    guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
-    rows = guildinfo.fetchall()
-    embed = discord.Embed(title='Auto ban list', colour=0x000000)
-    banlist = ""
-    for row in rows:
-        user = await bot.fetch_user(row[1])
-        banlist += (str(user) + " - " + str(row[1]) + "\n" + "Reason: " + str(row[13]) + "\n" + "\n")
-    embed.add_field(name="Users", value=banlist)
-    embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png',
-                     text=(str(datetime.datetime.now())[:-7]))
-    guildinfo.close()
-    await ctx.channel.send(embed=embed)
+guild_ids = []
 
 
 @bot.event
 async def on_ready():
-    global imagechannel, verificationchannel, theautobanlist
+    global imagechannel, verificationchannel, theautobanlist, guild_ids
     guildinfo = conn.cursor()
     print(f'{bot.user} has connected to Discord!')
+
     for guild in bot.guilds:
         print(f'Connected to {guild.name}')
+        guild_ids.append(guild.id)
+    print(guild_ids)
     guildinfo.execute("SELECT * FROM guildsInfo")
     rows = guildinfo.fetchall()
     modchannels.clear()
@@ -394,12 +388,31 @@ You can press ❌ to cancel.""", embed=embed)
     await reacto.add_reaction('❌')
 
 
+@slash.slash(name='autobanlist', description='retrieves the list of users on the auto ban list', guild_ids=guild_ids)
+async def _autobanlist(ctx):
+    if not ctx.author.guild_permissions.ban_members:
+        return
+    guildinfo = conn.cursor()
+    guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
+    rows = guildinfo.fetchall()
+    embed = discord.Embed(title='Auto ban list', colour=0x000000)
+    banlist = ""
+    for row in rows:
+        user = await bot.fetch_user(row[1])
+        banlist += (str(user) + " - " + str(row[1]) + "\n" + "Reason: " + str(row[13]) + "\n" + "\n")
+    embed.add_field(name="Users", value=banlist)
+    embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png',
+                     text=(str(datetime.datetime.now())[:-7]))
+    guildinfo.close()
+    await ctx.channel.send(embed=embed)
+
+
 bot.remove_command('help')
 
 
-@bot.command()
-async def help(ctx):
-    await ctx.channel.send("""List of commands:
+@slash.slash(name="help", description="Shows the list of commands", guild_ids=guild_ids)
+async def _help(ctx):
+    await ctx.send("""List of commands:
 `%setmodchannel` - sets the bot's output to the current channel
 `%report userid` - creates an editable report ticket for the user
 `%info userid` - returns info about the reports the user has
@@ -408,17 +421,21 @@ async def help(ctx):
 `%autoban` - toggle to enable the bot to auto ban users on the auto ban list (only used in extreme circumstances)""")
 
 
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def data(ctx):
-    with open('curdata.txt', 'r', encoding='utf-8') as w:
+@slash.slash(name='data', description='Gives a link to the ban database', guild_ids=guild_ids)
+async def _data(ctx):
+    if not ctx.author.guild_permissions.ban_members:
+        return
+    await ctx.send("did it work")
+    '''with open('curdata.txt', 'r', encoding='utf-8') as w:
         datatosend = w.read()
-    await ctx.message.reply(datatosend, mention_author=False)
+    await ctx.message.reply(datatosend, mention_author=False)'''
 
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def setmodchannel(ctx):
+@slash.slash(name='setmodchannel', description='Sets the mod channel for logs and bans to the current channel',
+             guild_ids=guild_ids)
+async def _setmodchannel(ctx):
+    if not ctx.author.guild_permissions.administrator:
+        return
     print(f'Connected to {ctx.guild.name}')
     guildinfo = conn.cursor()
     sqlcommand = """DELETE FROM guildsInfo WHERE guildID=?"""
@@ -441,9 +458,10 @@ async def setmodchannel(ctx):
     guildinfo.close()
 
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def toggleupdates(ctx):
+@slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database', guild_ids=guild_ids)
+async def _toggleupdates(ctx):
+    if not ctx.author.guild_permissions.administrator:
+        return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
         await ctx.channel.send("You need to set the mod channel with %setmodchannel to use that")
@@ -459,10 +477,10 @@ async def toggleupdates(ctx):
         await ctx.channel.send("Database updates turned on")
 
 
-
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def autoban(ctx):
+@slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences', guild_ids=guild_ids)
+async def _autoban(ctx):
+    if not ctx.author.guild_permissions.administrator:
+        return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
         return
@@ -508,9 +526,10 @@ async def autoban(ctx):
             return
 
 
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def report(ctx):
+@slash.slash(name='report', description='creates an editable report ticket for the user', guild_ids=guild_ids)
+async def _report(ctx):
+    if not ctx.author.guild_permissions.ban_members:
+        return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
         await ctx.channel.send("You need to set the mod channel with %setmodchannel to use that")
@@ -557,9 +576,23 @@ You can press ❌ to cancel.""", embed=embed)
         await reacto.add_reaction('❌')
 
 
-@bot.command()
-@commands.has_permissions(ban_members=True)
-async def info(ctx, arg):
+@slash.slash(name='info', description='returns ban/report info on the user', options=[
+               create_option(
+                 name="user",
+                 description="User to get info on",
+                 option_type=6,
+                 required=False
+               ),
+               create_option(
+                 name="userid",
+                 description="ID of user to get info on",
+                 option_type=4,
+                 required=False
+               )
+             ], guild_ids=guild_ids)
+async def _info(ctx, user, userid):
+    if not ctx.author.guild_permissions.ban_members:
+        return
     print("recieved")
     try:
         if ctx.message.content[5:].strip().startswith('<'):
@@ -567,17 +600,19 @@ async def info(ctx, arg):
             arg = arg.replace("@", "")
             arg = arg.replace("!", "")
             arg = arg.replace(">", "")
-        int(arg)
+        if user:
+            userid=user.id
+        int(userid)
         print("success")
         # dumb code, fix later
         try:
             try:
-                member = ctx.guild.get_member(int(arg))
+                member = ctx.guild.get_member(int(userid))
                 embed = discord.Embed(title='Member Info', color=0xfffffe)
                 embed = await membersearch(embed, member)
             except:
 
-                user = await bot.fetch_user(int(arg))
+                user = await bot.fetch_user(int(userid))
                 embed = discord.Embed(title='User Info', color=0xfffffe)
                 embed = await usersearch(embed, user)
         except:
