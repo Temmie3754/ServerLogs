@@ -21,7 +21,6 @@ from discord_slash.utils.manage_commands import create_option
 from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType
 
 
-
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
 
