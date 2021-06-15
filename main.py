@@ -244,13 +244,13 @@ async def dataupdate(ctx):
                )])
 @slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _remove(ctx, banid):
-    await ctx.defer()
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
         await ctx.send("Please do the command in the verification channel", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     try:
         guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(2), str(banid)))
@@ -281,7 +281,6 @@ async def _remove(ctx, banid):
              ])
 @slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _alt(ctx, userid1, userid2):
-    await ctx.defer()
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
@@ -292,14 +291,15 @@ async def _alt(ctx, userid1, userid2):
         userid1 = int(userid1)
         userid2 = int(userid2)
     except:
-        await ctx.send("Incorrect User ID")
+        await ctx.send("Incorrect User ID", hidden=True)
         return
     try:
         username1 = await bot.fetch_user(userid1)
         username2 = await bot.fetch_user(userid2)
     except discord.NotFound:
-        await ctx.send("Incorrect user ID")
+        await ctx.send("Incorrect user ID", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     sqlcommand = "SELECT * FROM reportList WHERE reportedUserID=? AND certified=1"
     guildinfo.execute(sqlcommand, (userid1,))
@@ -356,13 +356,13 @@ async def _alt(ctx, userid1, userid2):
              ])
 @slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _note(ctx, userid, note):
-    await ctx.defer()
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
         await ctx.send("Please do the command in the verification channel", hidden=True)
         return
+    await ctx.defer()
     noted = note
     print(note)
     guildinfo = conn.cursor()
@@ -395,7 +395,6 @@ async def _note(ctx, userid, note):
              ])
 @slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _communityban(ctx, userid, reason):
-    await ctx.defer()
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
@@ -404,13 +403,14 @@ async def _communityban(ctx, userid, reason):
         return
     print(reason)
     if reason == "" or reason == " ":
-        await ctx.send("Please input a reason")
+        await ctx.send("Please input a reason", hidden=True)
         return
     try:
         user = await bot.fetch_user(int(userid))
     except discord.NotFound:
-        await ctx.send("User ID could not be found")
+        await ctx.send("User ID could not be found", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     guildinfo.execute("UPDATE reportList SET autoBan=1, autoBanReason=? WHERE reportedUserID=?", (reason, user.id))
     conn.commit()
@@ -468,10 +468,10 @@ You can press ❌ to cancel.""", embed=embed, components=[[
 
 @slash.slash(name='autobanlist', description='retrieves the list of users on the auto ban list', guild_ids=guild_ids)
 async def _autobanlist(ctx):
-    await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
     rows = guildinfo.fetchall()
@@ -495,7 +495,6 @@ bot.remove_command('help')
 
 @slash.slash(name="help", description="Shows the list of commands", guild_ids=guild_ids)
 async def _help(ctx):
-    await ctx.defer()
     await ctx.send("""List of commands:
 `/setmodchannel` - sets the bot's output to the current channel
 `/report` - creates an editable report ticket for the user
@@ -507,10 +506,10 @@ async def _help(ctx):
 
 @slash.slash(name='data', description='Gives a link to the ban database', guild_ids=guild_ids)
 async def _data(ctx):
-    await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
+    await ctx.defer()
     with open('curdata.txt', 'r', encoding='utf-8') as w:
         datatosend = w.read()
     await ctx.send(datatosend)
@@ -519,10 +518,10 @@ async def _data(ctx):
 @slash.slash(name='setmodchannel', description='Sets the mod channel for logs and bans to the current channel',
              guild_ids=guild_ids)
 async def _setmodchannel(ctx):
-    await ctx.defer()
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
+    await ctx.defer()
     print(f'Connected to {ctx.guild.name}')
     guildinfo = conn.cursor()
     sqlcommand = """DELETE FROM guildsInfo WHERE guildID=?"""
@@ -547,14 +546,15 @@ async def _setmodchannel(ctx):
 
 @slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database', guild_ids=guild_ids)
 async def _toggleupdates(ctx):
-    await ctx.defer()
+
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        await ctx.send("You need to set the mod channel with %setmodchannel to use that")
+        await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE guildID=?", (int(ctx.guild.id),))
     row = guildinfo.fetchone()
@@ -568,14 +568,14 @@ async def _toggleupdates(ctx):
 
 @slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences', guild_ids=guild_ids)
 async def _autoban(ctx):
-    await ctx.defer()
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        await ctx.send("You need to set the mod channel with %setmodchannel to use that")
+        await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
         return
+    await ctx.defer()
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE guildID=?", (int(ctx.guild.id),))
     rows = guildinfo.fetchall()
@@ -636,25 +636,26 @@ async def _autoban(ctx):
                )
              ])
 async def _report(ctx, user=None, userid=None):
-    await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        await ctx.send("You need to set the mod channel with %setmodchannel to use that")
+        await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
         return
     if user is None:
-        await ctx.send("Invalid User ID")
+        await ctx.send("Invalid User", hidden=True)
         return
+
     if not isinstance(user, str):
         user = user.id
     userid = int(user)
     try:
         user = await bot.fetch_user(userid)
     except discord.NotFound:
-        await ctx.send("Invalid User ID")
+        await ctx.send("Invalid User ID", hidden=True)
         return
+    await ctx.defer()
     banid = shortuuid.ShortUUID().random(length=22)
     embed = discord.Embed(title='Report', colour=0xe74c3c)
     embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
@@ -702,13 +703,13 @@ You can press ❌ to cancel."""
                )
              ])
 async def _info(ctx, user=None, userid=None):
-    await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
-        await ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send(hidden=True, content="You do not have the permissions to use that command")
         return
     if user is None:
-        await ctx.send("Enter a user to use the command", hidden=True)
+        await ctx.send(hidden=True, content="Enter a user to use the command")
         return
+    await ctx.defer()
     print("recieved")
     try:
         if not isinstance(user, str):
@@ -764,13 +765,14 @@ async def on_button_click(interaction):
             return False
         return 0 < int(m.content) < 20
     if message.author == bot.user:
-        await interaction.respond(type=6)
         try:
             newEmbed = message.embeds[0]
             embed_dict = newEmbed.to_dict()
         except:
+            await interaction.respond(type=6)
             return
         if embed_dict['color'] == 0x00FF00 or embed_dict['color'] == 0x000000:
+            await interaction.respond(type=6)
             return
         if channel == verificationchannel:
             guildinfo = conn.cursor()
@@ -785,6 +787,7 @@ async def on_button_click(interaction):
                 except Exception as e:
                     print(e)
                     print("major error, kill")
+                    return
                 conn.commit()
                 await banlistupdate(await bot.fetch_user(int(reported[-1])))
             elif interaction.component.id == '❌':
@@ -799,10 +802,12 @@ async def on_button_click(interaction):
                     print("major error, kill")
                 conn.commit()
             guildinfo.close()
+            await interaction.respond(type=6)
         else:
             if not user.guild_permissions.ban_members:
-                await channel.send(user.name + " you do not have permission to perform that action")
+                await interaction.respond(content=(user.name + " you do not have permission to perform that action"))
                 return
+            await interaction.respond(type=6)
             if newEmbed.fields[0].name == "Banned User":
                 if embed_dict['color'] == 0xe74c3b:
                     runningmodchannels[modchannels.index(channel)] = 0
@@ -960,8 +965,9 @@ async def on_button_click(interaction):
                     user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
                     try:
                         await guild.kick(user=user2, reason="Failed verification")
-                    except PermissionError:
+                    except (PermissionError, discord.errors.Forbidden):
                         await channel.send("I don't have permissions to kick that user")
+                        return
                     await message.edit(embed=newEmbed)
                     await channel.send(str(user2) + " was kicked from the server.")
                 elif interaction.component.id == '☠':
@@ -970,246 +976,9 @@ async def on_button_click(interaction):
                     user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
                     try:
                         await guild.ban(user=user2, reason="Failed verification", delete_message_days=0)
-                    except PermissionError:
+                    except (PermissionError, discord.errors.Forbidden):
                         await channel.send("I don't have permissions to ban that user")
-                    await message.edit(embed=newEmbed)
-                    await channel.send(str(user2) + " was banned from the server.")
-
-
-@bot.event
-async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
-    channel = bot.get_channel(payload.channel_id)
-    if channel not in modchannels and channel != verificationchannel:
-        return
-    guild = bot.get_guild(payload.guild_id)
-    user = guild.get_member(payload.user_id)
-    if user == bot.user:
-        return
-    try:
-        message = await channel.fetch_message(payload.message_id)
-    except:
-        print("unknown error")
-        return
-
-    def check(m):
-        return m.author.id == user.id and m.channel == channel
-
-    def check2(m):
-        try:
-            int(m.content)
-        except ValueError:
-            return False
-        return 0 < int(m.content) < 20
-
-    if message.author == bot.user:
-        await message.remove_reaction(payload.emoji, user)
-        try:
-            newEmbed = message.embeds[0]
-            embed_dict = newEmbed.to_dict()
-        except:
-            return
-        if embed_dict['color'] == 0x00FF00 or embed_dict['color'] == 0x000000:
-            return
-        if channel == verificationchannel:
-            guildinfo = conn.cursor()
-            if payload.emoji.name == '✅':
-                embed_dict['color'] = 0x00FF00
-                newEmbed = discord.Embed.from_dict(embed_dict)
-                reported = newEmbed.fields[0].value.split()
-                banid = newEmbed.fields[6].value
-                await message.edit(embed=newEmbed)
-                try:
-                    guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(1), str(banid)))
-                except Exception as e:
-                    print(e)
-                    print("major error, kill")
-                conn.commit()
-                await banlistupdate(await bot.fetch_user(int(reported[-1])))
-            elif payload.emoji.name == '❌':
-                embed_dict['color'] = 0x000000
-                newEmbed = discord.Embed.from_dict(embed_dict)
-                banid = newEmbed.fields[6].value
-                await message.edit(embed=newEmbed)
-                try:
-                    guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(2), str(banid)))
-                except Exception as e:
-                    print(e)
-                    print("major error, kill")
-                conn.commit()
-            guildinfo.close()
-        else:
-            if not user.guild_permissions.ban_members:
-                await channel.send(user.name + " you do not have permission to perform that action")
-                return
-            if newEmbed.fields[0].name == "Banned User":
-                if embed_dict['color'] == 0xe74c3b:
-                    runningmodchannels[modchannels.index(channel)] = 0
-                    embed_dict['color'] = 0xe74c3c
-                elif embed_dict['color'] == 0xf1c40e:
-                    embed_dict['color'] = 0xf1c40f
-                    runningmodchannels[modchannels.index(channel)] = 0
-                if payload.emoji.name == '✅':
-                    if embed_dict['color'] == 0xf1c40f:
-                        embed_dict['color'] = 0x00FF00
-                        newEmbed = discord.Embed.from_dict(embed_dict)
-                        reported = newEmbed.fields[0].value.split()
-                        reason = newEmbed.fields[2].value
-                        evidence = newEmbed.fields[3].value
-                        bantype = newEmbed.fields[4].value
-                        bannotes = newEmbed.fields[5].value
-                        banid = newEmbed.fields[6].value
-                        if reason == "Loli content" or reason == "Real child pornography content":
-                            evidence = "[Evidence removed due to sensitive content]"
-                        guildinfo = conn.cursor()
-                        sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
-                        evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
-                        Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
-                        try:
-                            guildinfo.execute(sql, (
-                                "PII removed", int(reported[-1]), "PII removed", int(guild.id), reason,
-                                evidence,
-                                bantype,
-                                bannotes, str(datetime.datetime.now())[:-7], int(0), banid, "None", int(0), "None"))
-                        except Exception as e:
-                            print(e)
-                            print("major error, kill")
-                        conn.commit()
-                        guildinfo.close()
-                        await verifyban(newEmbed, await bot.fetch_user(int(reported[-1])))
-                        await message.edit(content="_ _", embed=newEmbed)
-                    else:
-                        await channel.send("Please enter the ban type and ban reason before submitting")
-                elif payload.emoji.name == '🔨':
-                    mesg = await channel.send('Enter a new ban reason')
-                    try:
-                        msg = await bot.wait_for("message", check=check, timeout=120)
-                    except TimeoutError:
-                        await mesg.delete()
                         return
-                    try:
-                        await mesg.delete()
-                    except:
-                        print("oof")
-                    if newEmbed.fields[4].value != "None":
-                        embed_dict['color'] = 0xf1c40f
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    newEmbed.set_field_at(2, name='Reason', value=msg.content, inline=False)
-                    await msg.delete()
-                    await message.edit(embed=newEmbed)
-                elif payload.emoji.name == '📷':
-                    runningmodchannels[modchannels.index(channel)] = 1
-                    mesg = await channel.send('Provide evidence for ban')
-                    if embed_dict['color'] == 0xf1c40f:
-                        embed_dict['color'] = 0xf1c40e
-                    else:
-                        embed_dict['color'] = 0xe74c3b
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    await message.edit(embed=newEmbed)
-                    embed_dict = newEmbed.to_dict()
-                    while True:
-                        try:
-                            msg = await bot.wait_for("message", check=check, timeout=1)
-                            tosend = ""
-                            for attachment in msg.attachments:
-                                await attachment.save(attachment.filename)
-                                msg2 = await imagechannel.send(file=discord.File(attachment.filename))
-                                os.remove(attachment.filename)
-                                if len(msg.attachments) > 1:
-                                    tosend += msg2.attachments[0].url + "\n"
-                                else:
-                                    tosend = msg2.attachments[0].url
-                                print(tosend)
-                            newEmbed = discord.Embed.from_dict(embed_dict)
-                            if msg.content != "":
-                                msg.content += "\n"
-                            if newEmbed.fields[3].value == "None":
-                                newEmbed.set_field_at(3, name='Evidence', value=msg.content + tosend, inline=False)
-                            else:
-                                newEmbed.set_field_at(3, name='Evidence',
-                                                      value=newEmbed.fields[3].value + "\n" + msg.content + tosend,
-                                                      inline=False)
-                            await message.edit(embed=newEmbed)
-                            await msg.delete()
-                        except:
-                            if runningmodchannels[modchannels.index(channel)] == 0:
-                                break
-                    await mesg.delete()
-                elif payload.emoji.name == '📸':
-                    embed_dict['color'] = 0xe74c3c
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    newEmbed.set_field_at(3, name='Evidence', value="None", inline=False)
-                    await message.edit(embed=newEmbed)
-                elif payload.emoji.name == '#️⃣':
-                    mesg = await channel.send("""Enter the ban type:
-1 - Harassing
-2 - Spamming
-3 - Raiding
-4 - Racist content
-5 - Disturbing content
-6 - Alts
-7 - Bots
-8 - Other Unwanted Content
-9 - Loli content
-10 - Real child pornography content
-11 - Sexual advances with minors
-12 - Unwanted NSFW
-13 - Other Sexual Content
-14 - Piracy
-15 - Viruses
-16 - Selling drugs
-17 - Under 18
-18 - Under 13
-19 - Other""")
-                    try:
-                        msg = await bot.wait_for("message", check=check2, timeout=60)
-                    except TimeoutError:
-                        await mesg.delete()
-                        return
-                    await mesg.delete()
-                    if newEmbed.fields[2].value != "None":
-                        embed_dict['color'] = 0xf1c40f
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    newEmbed.set_field_at(4, name='Ban Type', value=bantypelist[int(msg.content) - 1], inline=False)
-                    await message.edit(embed=newEmbed)
-                    await msg.delete()
-                elif payload.emoji.name == '🗒️':
-                    mesg = await channel.send('Enter ban notes')
-                    try:
-                        msg = await bot.wait_for("message", check=check, timeout=120)
-                    except TimeoutError:
-                        await mesg.delete()
-                        return
-                    await mesg.delete()
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    newEmbed.set_field_at(5, name='Ban Notes', value=msg.content, inline=False)
-                    await message.edit(embed=newEmbed)
-                    await msg.delete()
-                elif payload.emoji.name == '❌':
-                    newEmbed = discord.Embed(title="Report cancelled", color=0x000000)
-                    await message.edit(content="_ _", embed=newEmbed)
-            elif newEmbed.fields[0].name == "Member" or newEmbed.fields[0].name == "User":
-                if payload.emoji.name == '✅':
-                    embed_dict['color'] = 0x00FF00
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    await message.edit(embed=newEmbed)
-                elif payload.emoji.name == '❌':
-                    embed_dict['color'] = 0x000000
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
-                    try:
-                        await guild.kick(user=user2, reason="Failed verification")
-                    except PermissionError:
-                        await channel.send("I don't have permissions to ban that user")
-                    await message.edit(embed=newEmbed)
-                    await channel.send(str(user2) + " was kicked from the server.")
-                elif payload.emoji.name == '☠':
-                    embed_dict['color'] = 0x000000
-                    newEmbed = discord.Embed.from_dict(embed_dict)
-                    user2 = await bot.fetch_user(int(newEmbed.fields[0].value.split()[-1]))
-                    try:
-                        await guild.ban(user=user2, reason="Failed verification", delete_message_days=0)
-                    except PermissionError:
-                        await channel.send("I don't have permissions to ban that user")
                     await message.edit(embed=newEmbed)
                     await channel.send(str(user2) + " was banned from the server.")
 
@@ -1241,11 +1010,24 @@ async def on_member_join(member):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, MissingPermissions):
-        await ctx.channel.send("You do not have the permissions to use that command.")
+        await ctx.send(hidden=True, content="You do not have the permissions to use that command.")
     elif isinstance(error, discord.ext.commands.errors.CommandNotFound):
         return
+    elif isinstance(error, discord.Forbidden):
+        await ctx.send("That action is forbidden", hidden=True)
     else:
         raise error
+
+@bot.event
+async def on_slash_command_error(ctx, ex):
+    if isinstance(ex, MissingPermissions):
+        await ctx.send("You do not have the permissions to use that command.", hidden=True)
+    elif isinstance(ex, discord.ext.commands.errors.CommandNotFound):
+        return
+    elif isinstance(ex, discord.Forbidden):
+        await ctx.send("That action is forbidden", hidden=True)
+    else:
+        raise ex
 
 
 bot.run(TOKEN)
