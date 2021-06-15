@@ -590,13 +590,18 @@ async def _autoban(ctx):
 
             for line in rows2:
                 abanlist.append(line[1])
+            tobanmembers=""
             for member in ctx.guild.members:
                 if member.id in abanlist:
-                    await ctx.send(
-                        "Warning: " + str(member) + " will be banned if you enable the auto ban list")
-            await ctx.send("Enabling this will allow the bot to auto ban individuals with heinous "
+                    tobanmembers += (str(member)+" ")
+            if tobanmembers!="":
+                tobanmembers=("Warning: " + tobanmembers + "will be banned if you enable the auto ban list\n")
+            await ctx.send(tobanmembers+"Enabling this will allow the bot to auto ban individuals with heinous "
                                    "offences\nDo you want to continue?")
-            msg = await bot.wait_for("message", check=check, timeout=120)
+            try:
+                msg = await bot.wait_for("message", check=check, timeout=120)
+            except TimeoutError:
+                return
             if msg.content.lower() == "y" or msg.content.lower() == "yes":
                 for row2 in rows2:
                     try:
@@ -807,7 +812,6 @@ async def on_button_click(interaction):
             if not user.guild_permissions.ban_members:
                 await interaction.respond(content=(user.name + " you do not have permission to perform that action"))
                 return
-            await interaction.respond(type=6)
             if newEmbed.fields[0].name == "Banned User":
                 if embed_dict['color'] == 0xe74c3b:
                     runningmodchannels[modchannels.index(channel)] = 0
@@ -852,6 +856,7 @@ async def on_button_click(interaction):
                         msg = await bot.wait_for("message", check=check, timeout=120)
                     except TimeoutError:
                         await mesg.delete()
+                        await interaction.respond(type=6)
                         return
                     try:
                         await mesg.delete()
@@ -931,6 +936,7 @@ async def on_button_click(interaction):
                         msg = await bot.wait_for("message", check=check2, timeout=60)
                     except TimeoutError:
                         await mesg.delete()
+                        await interaction.respond(type=6)
                         return
                     await mesg.delete()
                     if newEmbed.fields[2].value != "None":
@@ -945,6 +951,7 @@ async def on_button_click(interaction):
                         msg = await bot.wait_for("message", check=check, timeout=120)
                     except TimeoutError:
                         await mesg.delete()
+                        await interaction.respond(type=6)
                         return
                     await mesg.delete()
                     newEmbed = discord.Embed.from_dict(embed_dict)
@@ -966,7 +973,7 @@ async def on_button_click(interaction):
                     try:
                         await guild.kick(user=user2, reason="Failed verification")
                     except (PermissionError, discord.errors.Forbidden):
-                        await channel.send("I don't have permissions to kick that user")
+                        await interaction.respond(content="I don't have permissions to kick that user")
                         return
                     await message.edit(embed=newEmbed)
                     await channel.send(str(user2) + " was kicked from the server.")
@@ -977,10 +984,11 @@ async def on_button_click(interaction):
                     try:
                         await guild.ban(user=user2, reason="Failed verification", delete_message_days=0)
                     except (PermissionError, discord.errors.Forbidden):
-                        await channel.send("I don't have permissions to ban that user")
+                        await interaction.respond(content="I don't have permissions to ban that user")
                         return
                     await message.edit(embed=newEmbed)
                     await channel.send(str(user2) + " was banned from the server.")
+            await interaction.respond(type=6)
 
 
 @bot.event
