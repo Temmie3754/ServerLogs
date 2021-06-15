@@ -292,12 +292,13 @@ async def _alt(ctx, userid1, userid2):
         userid1 = int(userid1)
         userid2 = int(userid2)
     except:
-        await ctx.chennel.send("Incorrect User ID")
+        await ctx.send("Incorrect User ID")
         return
-    username1 = await bot.fetch_user(userid1)
-    username2 = await bot.fetch_user(userid2)
-    if username1 is None or username2 is None:
-        await ctx.channel.send("Incorrect user ID")
+    try:
+        username1 = await bot.fetch_user(userid1)
+        username2 = await bot.fetch_user(userid2)
+    except discord.NotFound:
+        await ctx.send("Incorrect user ID")
         return
     guildinfo = conn.cursor()
     sqlcommand = "SELECT * FROM reportList WHERE reportedUserID=? AND certified=1"
@@ -310,28 +311,32 @@ async def _alt(ctx, userid1, userid2):
         notetodo = "Alt of " + str(username1) + " - " + str(userid1)
         for row in user1bans:
             if row[11] != "None":
-                notetodo = "\n" + notetodo
+                notetodo = row[11] + "\n" + notetodo
             sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid2), "PII removed", int(row[3]), row[4], row[5], row[6],
-                                    row[7], row[8], row[9], row[10], row[11] + notetodo, row[12], row[14]))
+                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12], row[13]))
+            notetodo = "Alt of " + str(username2) + " - " + str(userid2)
+            guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (notetodo, userid1))
     if len(user2bans) != 0:
         notetodo = "Alt of " + str(username2) + " - " + str(userid2)
         for row in user2bans:
             if row[11] != "None":
-                notetodo = "\n" + notetodo
+                notetodo = row[11] + "\n" + notetodo
             sql = """INSERT INTO reportList (reportedUserName,reportedUserID,guildName,guildID,reason,
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid1), "PII removed", int(row[3]), row[4], row[5], row[6],
-                                    row[7], row[8], row[9], row[10], row[11] + notetodo, row[12], row[14]))
+                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12], row[13]))
+            notetodo = "Alt of " + str(username1) + " - " + str(userid1)
+            guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (notetodo, userid2))
     if len(user1bans) == 0 and len(user2bans) == 0:
-        await ctx.channel.send("Could not find any bans on record for these users, did you enter the IDs incorrectly?")
+        await ctx.send("Could not find any bans on record for these users, did you enter the IDs incorrectly?")
     else:
         conn.commit()
         guildinfo.close()
-        await ctx.channel.send("Alt update successful")
+        await ctx.send("Alt update successful")
 
 
 @slash.slash(name='note', description='Adds a note to the user', guild_ids=[botadminguild],
@@ -401,8 +406,9 @@ async def _communityban(ctx, userid, reason):
     if reason == "" or reason == " ":
         await ctx.send("Please input a reason")
         return
-    user = await bot.fetch_user(int(userid))
-    if user is None:
+    try:
+        user = await bot.fetch_user(int(userid))
+    except discord.NotFound:
         await ctx.send("User ID could not be found")
         return
     guildinfo = conn.cursor()
@@ -430,7 +436,7 @@ async def on_member_ban(guild, user):
     logs = logs[0]
     if logs.user == bot.user:
         return
-    banid = shortuuid.ShortUUID().random(length=22)
+    banid = shortuuid       .ShortUUID().random(length=22)
     embed = discord.Embed(title='Report', colour=0xe74c3c)
     embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
     embed.add_field(name='Server', value=guild.name + " - " + str(guild.id), inline=True)
@@ -472,7 +478,10 @@ async def _autobanlist(ctx):
     embed = discord.Embed(title='Auto ban list', colour=0x000000)
     banlist = ""
     for row in rows:
-        user = await bot.fetch_user(row[1])
+        try:
+            user = await bot.fetch_user(row[1])
+        except discord.NotFound:
+            user = "User not found"
         banlist += (str(user) + " - " + str(row[1]) + "\n" + "Reason: " + str(row[13]) + "\n" + "\n")
     embed.add_field(name="Users", value=banlist)
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png',
@@ -590,7 +599,10 @@ async def _autoban(ctx):
             msg = await bot.wait_for("message", check=check, timeout=120)
             if msg.content.lower() == "y" or msg.content.lower() == "yes":
                 for row2 in rows2:
-                    banuser = await bot.fetch_user(row2[1])
+                    try:
+                        banuser = await bot.fetch_user(row2[1])
+                    except discord.NotFound:
+                        continue
                     await ctx.guild.ban(user=banuser, reason=str(row2[13]), delete_message_days=0)
                 guildinfo.execute("UPDATE guildsInfo SET autoBan=1 WHERE guildID=?", (int(ctx.guild.id),))
                 await ctx.send("Autoban list turned on")
@@ -638,8 +650,9 @@ async def _report(ctx, user=None, userid=None):
     if not isinstance(user, str):
         user = user.id
     userid = int(user)
-    user = await bot.fetch_user(userid)
-    if user is None:
+    try:
+        user = await bot.fetch_user(userid)
+    except discord.NotFound:
         await ctx.send("Invalid User ID")
         return
     banid = shortuuid.ShortUUID().random(length=22)
