@@ -20,7 +20,6 @@ from discord_slash.model import SlashCommandPermissionType
 from discord_slash.utils.manage_commands import create_option
 from discord_components import DiscordComponents, Button, ButtonStyle, InteractionType
 
-
 guildinfosql = r'database\guildinfosql.db'
 conn = sqlite3.connect(guildinfosql)
 
@@ -236,13 +235,14 @@ async def dataupdate(ctx):
 
 @slash.slash(name='remove', description='Removes a ban from the database', guild_ids=[botadminguild],
              options=[
-               create_option(
-                 name="banid",
-                 description="ID of the ban to remove",
-                 option_type=3,
-                 required=True
-               )])
-@slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
+                 create_option(
+                     name="banid",
+                     description="ID of the ban to remove",
+                     option_type=3,
+                     required=True
+                 )])
+@slash.permission(guild_id=botadminguild,
+                  permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _remove(ctx, banid):
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -252,34 +252,36 @@ async def _remove(ctx, banid):
         return
     await ctx.defer()
     guildinfo = conn.cursor()
-    try:
-        guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(2), str(banid)))
-    except Exception as e:
-        print(e)
+    guildinfo.execute("SELECT * FROM reportList WHERE banID=?", (str(banid),))
+    aban = guildinfo.fetchone()
+    if not aban:
         await ctx.send("Ban ID not found")
         guildinfo.close()
         return
+    guildinfo.execute("UPDATE reportList SET certified=? WHERE banID=?", (int(2), str(banid)))
     await ctx.send("Ban removal successful")
     conn.commit()
     guildinfo.close()
 
 
-@slash.slash(name='alt', description='Links an alt account to have the same record as the main account', guild_ids=[botadminguild],
+@slash.slash(name='alt', description='Links an alt account to have the same record as the main account',
+             guild_ids=[botadminguild],
              options=[
-               create_option(
-                 name="userid1",
-                 description="ID of first account",
-                 option_type=3,
-                 required=True
-               ),
-               create_option(
-                 name="userid2",
-                 description="ID of second account",
-                 option_type=3,
-                 required=True
-               )
+                 create_option(
+                     name="userid1",
+                     description="ID of first account",
+                     option_type=3,
+                     required=True
+                 ),
+                 create_option(
+                     name="userid2",
+                     description="ID of second account",
+                     option_type=3,
+                     required=True
+                 )
              ])
-@slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
+@slash.permission(guild_id=botadminguild,
+                  permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _alt(ctx, userid1, userid2):
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -316,7 +318,8 @@ async def _alt(ctx, userid1, userid2):
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid2), "PII removed", int(row[3]), row[4], row[5], row[6],
-                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12], row[13]))
+                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12],
+                                    row[13]))
             notetodo = "Alt of " + str(username2) + " - " + str(userid2)
             guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (notetodo, userid1))
     if len(user2bans) != 0:
@@ -328,7 +331,8 @@ async def _alt(ctx, userid1, userid2):
                                     evidence,banType,banNotes,time, certified, banID, userNotes, autoBan, autoBanReason) 
                                     Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
             guildinfo.execute(sql, ("PII removed", int(userid1), "PII removed", int(row[3]), row[4], row[5], row[6],
-                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12], row[13]))
+                                    row[7], row[8], row[9], shortuuid.ShortUUID().random(length=22), notetodo, row[12],
+                                    row[13]))
             notetodo = "Alt of " + str(username1) + " - " + str(userid1)
             guildinfo.execute("UPDATE reportList SET userNotes=? WHERE reportedUserID=?", (notetodo, userid2))
     if len(user1bans) == 0 and len(user2bans) == 0:
@@ -341,20 +345,21 @@ async def _alt(ctx, userid1, userid2):
 
 @slash.slash(name='note', description='Adds a note to the user', guild_ids=[botadminguild],
              options=[
-               create_option(
-                 name="userid",
-                 description="ID of the user",
-                 option_type=3,
-                 required=True
-               ),
-               create_option(
-                 name="note",
-                 description="The note for the user",
-                 option_type=3,
-                 required=True
-               )
+                 create_option(
+                     name="userid",
+                     description="ID of the user",
+                     option_type=3,
+                     required=True
+                 ),
+                 create_option(
+                     name="note",
+                     description="The note for the user",
+                     option_type=3,
+                     required=True
+                 )
              ])
-@slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
+@slash.permission(guild_id=botadminguild,
+                  permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _note(ctx, userid, note):
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -378,22 +383,25 @@ async def _note(ctx, userid, note):
     guildinfo.close()
 
 
-@slash.slash(name='communityban', description='Adds a user to the community auto ban list and bans from servers with it enabled', guild_ids=[botadminguild],
+@slash.slash(name='communityban',
+             description='Adds a user to the community auto ban list and bans from servers with it enabled',
+             guild_ids=[botadminguild],
              options=[
-               create_option(
-                 name="userid",
-                 description="ID of the user",
-                 option_type=3,
-                 required=True
-               ),
-               create_option(
-                 name="reason",
-                 description="The reason for the community ban",
-                 option_type=3,
-                 required=True
-               )
+                 create_option(
+                     name="userid",
+                     description="ID of the user",
+                     option_type=3,
+                     required=True
+                 ),
+                 create_option(
+                     name="reason",
+                     description="The reason for the community ban",
+                     option_type=3,
+                     required=True
+                 )
              ])
-@slash.permission(guild_id=botadminguild, permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
+@slash.permission(guild_id=botadminguild,
+                  permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
 async def _communityban(ctx, userid, reason):
     if ctx.author.id not in botadmins:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -436,7 +444,7 @@ async def on_member_ban(guild, user):
     logs = logs[0]
     if logs.user == bot.user:
         return
-    banid = shortuuid       .ShortUUID().random(length=22)
+    banid = shortuuid.ShortUUID().random(length=22)
     embed = discord.Embed(title='Report', colour=0xe74c3c)
     embed.add_field(name='Banned User', value=str(user) + " - " + str(user.id), inline=True)
     embed.add_field(name='Server', value=guild.name + " - " + str(guild.id), inline=True)
@@ -544,9 +552,9 @@ async def _setmodchannel(ctx):
     guildinfo.close()
 
 
-@slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database', guild_ids=guild_ids)
+@slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database',
+             guild_ids=guild_ids)
 async def _toggleupdates(ctx):
-
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
@@ -564,9 +572,12 @@ async def _toggleupdates(ctx):
     else:
         guildinfo.execute("UPDATE guildsInfo SET updates=1 WHERE guildID=?", (int(ctx.guild.id),))
         await ctx.send("Database updates turned on")
+    guildinfo.close()
+    conn.commit()
 
 
-@slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences', guild_ids=guild_ids)
+@slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences',
+             guild_ids=guild_ids)
 async def _autoban(ctx):
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -590,14 +601,14 @@ async def _autoban(ctx):
 
             for line in rows2:
                 abanlist.append(line[1])
-            tobanmembers=""
+            tobanmembers = ""
             for member in ctx.guild.members:
                 if member.id in abanlist:
-                    tobanmembers += (str(member)+" ")
-            if tobanmembers!="":
-                tobanmembers=("Warning: " + tobanmembers + "will be banned if you enable the auto ban list\n")
-            await ctx.send(tobanmembers+"Enabling this will allow the bot to auto ban individuals with heinous "
-                                   "offences\nDo you want to continue?")
+                    tobanmembers += (str(member) + " ")
+            if tobanmembers != "":
+                tobanmembers = ("Warning: " + tobanmembers + "will be banned if you enable the auto ban list\n")
+            await ctx.send(tobanmembers + "Enabling this will allow the bot to auto ban individuals with heinous "
+                                          "offences\nDo you want to continue?")
             try:
                 msg = await bot.wait_for("message", check=check, timeout=120)
             except TimeoutError:
@@ -627,19 +638,19 @@ async def _autoban(ctx):
 
 
 @slash.slash(name='report', description='creates an editable report ticket for the user', guild_ids=guild_ids, options=[
-               create_option(
-                 name="user",
-                 description="User to report",
-                 option_type=6,
-                 required=False
-               ),
-               create_option(
-                 name="userid",
-                 description="ID of User to report",
-                 option_type=3,
-                 required=False
-               )
-             ])
+    create_option(
+        name="user",
+        description="User to report",
+        option_type=6,
+        required=False
+    ),
+    create_option(
+        name="userid",
+        description="ID of User to report",
+        option_type=3,
+        required=False
+    )
+])
 async def _report(ctx, user=None, userid=None):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -672,7 +683,7 @@ async def _report(ctx, user=None, userid=None):
     embed.add_field(name='Ban ID', value=str(banid))
     embed.set_footer(icon_url='https://cdn.discordapp.com/emojis/708059652633526374.png', text=("Report " + str(
         datetime.datetime.now())[:-7]))
-    senmsg="I see you just reported " + str(user) + """
+    senmsg = "I see you just reported " + str(user) + """
 To help us categorize this ban, please do the following:
 Press 🔨 to set the ban reason.
 Press 📷 to add images or links to the evidence.
@@ -694,19 +705,19 @@ You can press ❌ to cancel."""
 
 
 @slash.slash(name='info', description='returns ban/report info on the user', guild_ids=guild_ids, options=[
-               create_option(
-                 name="user",
-                 description="User to get info on",
-                 option_type=6,
-                 required=False
-               ),
-               create_option(
-                 name="userid",
-                 description="ID of User to get info on",
-                 option_type=3,
-                 required=False
-               )
-             ])
+    create_option(
+        name="user",
+        description="User to get info on",
+        option_type=6,
+        required=False
+    ),
+    create_option(
+        name="userid",
+        description="ID of User to get info on",
+        option_type=3,
+        required=False
+    )
+])
 async def _info(ctx, user=None, userid=None):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send(hidden=True, content="You do not have the permissions to use that command")
@@ -747,6 +758,7 @@ async def _info(ctx, user=None, userid=None):
         print("fail??")
         await ctx.send("Invalid User ID")
 
+
 @bot.event
 async def on_button_click(interaction):
     channel = bot.get_channel(interaction.channel.id)
@@ -769,6 +781,7 @@ async def on_button_click(interaction):
         except ValueError:
             return False
         return 0 < int(m.content) < 20
+
     if message.author == bot.user:
         try:
             newEmbed = message.embeds[0]
@@ -1009,10 +1022,10 @@ async def on_member_join(member):
     embed = discord.Embed(title='New member joined', color=0xfffffe)
     embed = await membersearch(embed, member)
     await modchannel.send(embed=embed, components=[[
-            Button(label='', id='✅', emoji='✅'),
-            Button(label='', id='❌', emoji='❌'),
-            Button(label='', id='☠', emoji='☠')
-        ]])
+        Button(label='', id='✅', emoji='✅'),
+        Button(label='', id='❌', emoji='❌'),
+        Button(label='', id='☠', emoji='☠')
+    ]])
 
 
 @bot.event
@@ -1025,6 +1038,7 @@ async def on_command_error(ctx, error):
         await ctx.send("That action is forbidden", hidden=True)
     else:
         raise error
+
 
 @bot.event
 async def on_slash_command_error(ctx, ex):
