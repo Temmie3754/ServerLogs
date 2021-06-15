@@ -32,7 +32,7 @@ intents.bans = True
 bot = commands.Bot(command_prefix="£", intents=intents)
 slash = SlashCommand(bot, sync_commands=True)
 
-bantypelist = ["Harassing", "Spamming", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
+bantypelist = ["Harassment", "Spam", "Raiding", "Racist content", "Disturbing content", "Alts", "Bots",
                "Other Unwanted Content", "Loli content", "Real child pornography content",
                "Sexual advances with minors", "Unwanted NSFW", "Other Sexual Content", "Piracy", "Viruses",
                "Selling drugs", "Under 18", "Under 13", "Other"]
@@ -123,7 +123,11 @@ async def banlistupdate(member):
             return
         modchan = await fetch_modchan(guild)
         if modchan is not None:
-            await modchan.send("Ban database update for " + str(member), embed=embed)
+            await modchan.send("Ban database update for " + str(member), embed=embed, components=[[
+                Button(label='', id='✅', emoji='✅'),
+                Button(label='', id='❌', emoji='❌'),
+                Button(label='', id='☠', emoji='☠')
+            ]])
 
 
 async def verifyban(embed, member):
@@ -131,9 +135,10 @@ async def verifyban(embed, member):
     embed_dict = embed.to_dict()
     embed_dict['color'] = 0xe74c3c
     embed = discord.Embed.from_dict(embed_dict)
-    reacto = await verificationchannel.send("Verification needed for " + str(member), embed=embed)
-    await reacto.add_reaction('✅')
-    await reacto.add_reaction('❌')
+    await verificationchannel.send("Verification needed for " + str(member), embed=embed, components=[[
+        Button(label='', id='✅', emoji='✅'),
+        Button(label='', id='❌', emoji='❌')
+    ]])
 
 
 async def membersearch(embed, member):
@@ -862,19 +867,13 @@ async def on_button_click(interaction):
                         await verifyban(newEmbed, await bot.fetch_user(int(reported[-1])))
                         await message.edit(content="_ _", embed=newEmbed)
                     else:
-                        await channel.send("Please enter the ban type and ban reason before submitting")
+                        await interaction.respond(content="Please enter the ban type and ban reason before submitting")
                 elif interaction.component.id == '🔨':
-                    mesg = await channel.send('Enter a new ban reason')
+                    await interaction.respond(content='Enter a new ban reason')
                     try:
                         msg = await bot.wait_for("message", check=check, timeout=120)
                     except TimeoutError:
-                        await mesg.delete()
-                        await interaction.respond(type=6)
                         return
-                    try:
-                        await mesg.delete()
-                    except:
-                        print("oof")
                     if newEmbed.fields[4].value != "None":
                         embed_dict['color'] = 0xf1c40f
                     newEmbed = discord.Embed.from_dict(embed_dict)
@@ -883,7 +882,7 @@ async def on_button_click(interaction):
                     await message.edit(embed=newEmbed)
                 elif interaction.component.id == '📷':
                     runningmodchannels[modchannels.index(channel)] = 1
-                    mesg = await channel.send('Provide evidence for ban')
+                    await interaction.respond(content='Provide evidence for ban', ephemeral=True)
                     if embed_dict['color'] == 0xf1c40f:
                         embed_dict['color'] = 0xf1c40e
                     else:
@@ -918,16 +917,15 @@ async def on_button_click(interaction):
                         except:
                             if runningmodchannels[modchannels.index(channel)] == 0:
                                 break
-                    await mesg.delete()
                 elif interaction.component.id == '📸':
                     embed_dict['color'] = 0xe74c3c
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(3, name='Evidence', value="None", inline=False)
                     await message.edit(embed=newEmbed)
                 elif interaction.component.id == '#️⃣':
-                    mesg = await channel.send("""Enter the ban type:
-1 - Harassing
-2 - Spamming
+                    await interaction.respond(content="""Enter the ban type:
+1 - Harassment
+2 - Spam
 3 - Raiding
 4 - Racist content
 5 - Disturbing content
@@ -944,14 +942,11 @@ async def on_button_click(interaction):
 16 - Selling drugs
 17 - Under 18
 18 - Under 13
-19 - Other""")
+19 - Other""", ephemeral=True)
                     try:
                         msg = await bot.wait_for("message", check=check2, timeout=60)
                     except TimeoutError:
-                        await mesg.delete()
-                        await interaction.respond(type=6)
                         return
-                    await mesg.delete()
                     if newEmbed.fields[2].value != "None":
                         embed_dict['color'] = 0xf1c40f
                     newEmbed = discord.Embed.from_dict(embed_dict)
@@ -959,14 +954,11 @@ async def on_button_click(interaction):
                     await message.edit(embed=newEmbed)
                     await msg.delete()
                 elif interaction.component.id == '🗒️':
-                    mesg = await channel.send('Enter ban notes')
+                    await interaction.respond(content='Enter ban notes')
                     try:
                         msg = await bot.wait_for("message", check=check, timeout=120)
                     except TimeoutError:
-                        await mesg.delete()
-                        await interaction.respond(type=6)
                         return
-                    await mesg.delete()
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(5, name='Ban Notes', value=msg.content, inline=False)
                     await message.edit(embed=newEmbed)
@@ -1001,7 +993,10 @@ async def on_button_click(interaction):
                         return
                     await message.edit(embed=newEmbed)
                     await channel.send(str(user2) + " was banned from the server.")
-            await interaction.respond(type=6)
+            try:
+                await interaction.respond(type=6)
+            except discord.errors.NotFound:
+                return
 
 
 @bot.event
