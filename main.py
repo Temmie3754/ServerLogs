@@ -246,10 +246,10 @@ async def dataupdate(ctx):
 async def _remove(ctx, banid):
     await ctx.defer()
     if ctx.author.id not in botadmins:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
-        ctx.send("Please do the command in the verification channel", hidden=True)
+        await ctx.send("Please do the command in the verification channel", hidden=True)
         return
     guildinfo = conn.cursor()
     try:
@@ -283,10 +283,10 @@ async def _remove(ctx, banid):
 async def _alt(ctx, userid1, userid2):
     await ctx.defer()
     if ctx.author.id not in botadmins:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
-        ctx.send("Please do the command in the verification channel", hidden=True)
+        await ctx.send("Please do the command in the verification channel", hidden=True)
         return
     try:
         userid1 = int(userid1)
@@ -358,10 +358,10 @@ async def _alt(ctx, userid1, userid2):
 async def _note(ctx, userid, note):
     await ctx.defer()
     if ctx.author.id not in botadmins:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
-        ctx.send("Please do the command in the verification channel", hidden=True)
+        await ctx.send("Please do the command in the verification channel", hidden=True)
         return
     noted = note
     print(note)
@@ -397,10 +397,10 @@ async def _note(ctx, userid, note):
 async def _communityban(ctx, userid, reason):
     await ctx.defer()
     if ctx.author.id not in botadmins:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if ctx.channel != verificationchannel:
-        ctx.send("Please do the command in the verification channel", hidden=True)
+        await ctx.send("Please do the command in the verification channel", hidden=True)
         return
     print(reason)
     if reason == "" or reason == " ":
@@ -423,7 +423,7 @@ async def _communityban(ctx, userid, reason):
         modchan = await fetch_modchan(guild)
         await guild.ban(user=user, reason=str(reason), delete_message_days=0)
         await modchan.send("Community Ban: " + str(user) + " - " + str(user.id) + " for " + reason)
-    ctx.send("Community ban successful")
+    await ctx.send("Community ban successful")
 
 
 @bot.event
@@ -456,13 +456,13 @@ Press #️⃣ to select the ban type.
 Press 🗒️ to add ban notes.
 Press ✅ to submit the ban to the database.
 You can press ❌ to cancel.""", embed=embed, components=[[
-        Button(label='🔨', id='🔨'),
-        Button(label='📷', id='📷'),
-        Button(label='📸', id='📸'),
-        Button(label='#️⃣', id='#️⃣'),
-        Button(label='🗒️', id='🗒️')], [
-        Button(label='✅', id='✅'),
-        Button(label='❌', id='❌')
+        Button(label='', id='🔨', emoji='🔨'),
+        Button(label='', id='📷', emoji='📷'),
+        Button(label='', id='📸', emoji='📸'),
+        Button(label='', id='#️⃣', emoji='#️⃣'),
+        Button(label='', id='🗒️', emoji='🗒️')], [
+        Button(label='', id='✅', emoji='✅'),
+        Button(label='', id='❌', emoji='❌')
     ]])
 
 
@@ -470,7 +470,7 @@ You can press ❌ to cancel.""", embed=embed, components=[[
 async def _autobanlist(ctx):
     await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
@@ -509,7 +509,7 @@ async def _help(ctx):
 async def _data(ctx):
     await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     with open('curdata.txt', 'r', encoding='utf-8') as w:
         datatosend = w.read()
@@ -521,7 +521,7 @@ async def _data(ctx):
 async def _setmodchannel(ctx):
     await ctx.defer()
     if not ctx.author.guild_permissions.administrator:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     print(f'Connected to {ctx.guild.name}')
     guildinfo = conn.cursor()
@@ -549,7 +549,7 @@ async def _setmodchannel(ctx):
 async def _toggleupdates(ctx):
     await ctx.defer()
     if not ctx.author.guild_permissions.administrator:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
@@ -570,11 +570,11 @@ async def _toggleupdates(ctx):
 async def _autoban(ctx):
     await ctx.defer()
     if not ctx.author.guild_permissions.administrator:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        ctx.send("You need to set the mod channel with %setmodchannel to use that")
+        await ctx.send("You need to set the mod channel with %setmodchannel to use that")
         return
     guildinfo = conn.cursor()
     guildinfo.execute("SELECT * FROM guildsInfo WHERE guildID=?", (int(ctx.guild.id),))
@@ -638,7 +638,7 @@ async def _autoban(ctx):
 async def _report(ctx, user=None, userid=None):
     await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
@@ -677,13 +677,13 @@ Press ✅ to submit the ban to the database.
 You can press ❌ to cancel."""
     reacto = await ctx.send(content=senmsg, embed=embed)
     await reacto.edit(content=senmsg, embed=embed, components=[[
-        Button(label='🔨', id='🔨'),
-        Button(label='📷', id='📷'),
-        Button(label='📸', id='📸'),
-        Button(label='#️⃣', id='#️⃣'),
-        Button(label='🗒️', id='🗒️')],[
-        Button(label='✅', id='✅'),
-        Button(label='❌', id='❌')
+        Button(label='', id='🔨', emoji='🔨'),
+        Button(label='', id='📷', emoji='📷'),
+        Button(label='', id='📸', emoji='📸'),
+        Button(label='', id='#️⃣', emoji='#️⃣'),
+        Button(label='', id='🗒️', emoji='🗒️')], [
+        Button(label='', id='✅', emoji='✅'),
+        Button(label='', id='❌', emoji='❌')
     ]])
 
 
@@ -704,10 +704,10 @@ You can press ❌ to cancel."""
 async def _info(ctx, user=None, userid=None):
     await ctx.defer()
     if not ctx.author.guild_permissions.ban_members:
-        ctx.send("You do not have the permissions to use that command", hidden=True)
+        await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     if user is None:
-        ctx.send("Enter a user to use the command", hidden=True)
+        await ctx.send("Enter a user to use the command", hidden=True)
         return
     print("recieved")
     try:
@@ -732,9 +732,9 @@ async def _info(ctx, user=None, userid=None):
             return
         reacto = await ctx.send(embed=embed)
         await reacto.edit(embed=embed, components=[[
-            Button(label='✅', id='✅'),
-            Button(label='❌', id='❌'),
-            Button(label='☠', id='☠')
+            Button(label='', id='✅', emoji='✅'),
+            Button(label='', id='❌', emoji='❌'),
+            Button(label='', id='☠', emoji='☠')
         ]])
     except Exception as e:
         print(e)
@@ -743,10 +743,7 @@ async def _info(ctx, user=None, userid=None):
 
 @bot.event
 async def on_button_click(interaction):
-    await interaction.respond(type=6)
     channel = bot.get_channel(interaction.channel.id)
-    if channel not in modchannels and channel != verificationchannel:
-        return
     guild = interaction.guild
     user = guild.get_member(interaction.user.id)
     if user == bot.user:
@@ -767,6 +764,7 @@ async def on_button_click(interaction):
             return False
         return 0 < int(m.content) < 20
     if message.author == bot.user:
+        await interaction.respond(type=6)
         try:
             newEmbed = message.embeds[0]
             embed_dict = newEmbed.to_dict()
@@ -1233,10 +1231,10 @@ async def on_member_join(member):
         guildinfo.close()
     embed = discord.Embed(title='New member joined', color=0xfffffe)
     embed = await membersearch(embed, member)
-    await modchannel.send(embed=embed, components= [[
-            Button(label='✅', id='✅'),
-            Button(label='❌', id='❌'),
-            Button(label='☠', id='☠')
+    await modchannel.send(embed=embed, components=[[
+            Button(label='', id='✅', emoji='✅'),
+            Button(label='', id='❌', emoji='❌'),
+            Button(label='', id='☠', emoji='☠')
         ]])
 
 
