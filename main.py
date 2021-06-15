@@ -479,7 +479,7 @@ You can press ❌ to cancel.""", embed=embed, components=[[
     ]])
 
 
-@slash.slash(name='autobanlist', description='retrieves the list of users on the auto ban list', guild_ids=guild_ids)
+@slash.slash(name='autobanlist', description='retrieves the list of users on the auto ban list')
 async def _autobanlist(ctx):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -506,7 +506,7 @@ async def _autobanlist(ctx):
 bot.remove_command('help')
 
 
-@slash.slash(name="help", description="Shows the list of commands", guild_ids=guild_ids)
+@slash.slash(name="help", description="Shows the list of commands")
 async def _help(ctx):
     await ctx.send("""List of commands:
 `/setmodchannel` - sets the bot's output to the current channel
@@ -517,7 +517,7 @@ async def _help(ctx):
 `/autoban` - toggle to enable the bot to auto ban users on the auto ban list (only used in extreme circumstances)""")
 
 
-@slash.slash(name='data', description='Gives a link to the ban database', guild_ids=guild_ids)
+@slash.slash(name='data', description='Gives a link to the ban database')
 async def _data(ctx):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -528,8 +528,7 @@ async def _data(ctx):
     await ctx.send(datatosend)
 
 
-@slash.slash(name='setmodchannel', description='Sets the mod channel for logs and bans to the current channel',
-             guild_ids=guild_ids)
+@slash.slash(name='setmodchannel', description='Sets the mod channel for logs and bans to the current channel')
 async def _setmodchannel(ctx):
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -557,8 +556,7 @@ async def _setmodchannel(ctx):
     guildinfo.close()
 
 
-@slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database',
-             guild_ids=guild_ids)
+@slash.slash(name='toggleupdates', description='Toggles whether the server receives info about updates to the database')
 async def _toggleupdates(ctx):
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -581,8 +579,7 @@ async def _toggleupdates(ctx):
     conn.commit()
 
 
-@slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences',
-             guild_ids=guild_ids)
+@slash.slash(name='autoban', description='toggle the autoban system for users with extreme offences')
 async def _autoban(ctx):
     if not ctx.author.guild_permissions.administrator:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
@@ -642,7 +639,7 @@ async def _autoban(ctx):
             return
 
 
-@slash.slash(name='report', description='creates an editable report ticket for the user', guild_ids=guild_ids, options=[
+@slash.slash(name='report', description='creates an editable report ticket for the user', options=[
     create_option(
         name="user",
         description="User to report",
@@ -698,7 +695,7 @@ Press 🗒️ to add ban notes.
 Press ✅ to submit the ban to the database.
 You can press ❌ to cancel."""
     reacto = await ctx.send(content=senmsg, embed=embed)
-    await reacto.edit(content=senmsg, embed=embed, components=[[
+    await reacto.edit(components=[[
         Button(label='', id='🔨', emoji='🔨'),
         Button(label='', id='📷', emoji='📷'),
         Button(label='', id='📸', emoji='📸'),
@@ -709,7 +706,7 @@ You can press ❌ to cancel."""
     ]])
 
 
-@slash.slash(name='info', description='returns ban/report info on the user', guild_ids=guild_ids, options=[
+@slash.slash(name='info', description='returns ban/report info on the user', options=[
     create_option(
         name="user",
         description="User to get info on",
@@ -753,7 +750,7 @@ async def _info(ctx, user=None, userid=None):
             await ctx.send("Invalid User ID")
             return
         reacto = await ctx.send(embed=embed)
-        await reacto.edit(embed=embed, components=[[
+        await reacto.edit(components=[[
             Button(label='', id='✅', emoji='✅'),
             Button(label='', id='❌', emoji='❌'),
             Button(label='', id='☠', emoji='☠')
