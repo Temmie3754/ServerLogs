@@ -661,12 +661,15 @@ async def _report(ctx, user=None, userid=None):
     if modchannel is None:
         await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
         return
-    if user is None:
-        await ctx.send("Invalid User", hidden=True)
-        return
 
     if not isinstance(user, str):
-        user = user.id
+        try:
+            user = user.id
+        except:
+            print("ok")
+
+    if userid is not None:
+        user = int(userid)
     userid = int(user)
     try:
         user = await bot.fetch_user(userid)
@@ -869,7 +872,7 @@ async def on_button_click(interaction):
                     await interaction.respond(content='Enter a new ban reason')
                     try:
                         msg = await bot.wait_for("message", check=check, timeout=120)
-                    except TimeoutError:
+                    except:
                         return
                     if newEmbed.fields[4].value != "None":
                         embed_dict['color'] = 0xf1c40f
