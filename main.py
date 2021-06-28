@@ -178,10 +178,10 @@ async def usersearch(embed, user):
     for row in rows:
         usernote = str(row[11])
         guildname = bot.get_guild(row[3]).name
-        reports += ("Server: " + str(guildname) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
-            5] + "\n" + "Ban Type: "
-                    + str(row[6]) + "\n" + "Ban Notes: " + row[7] + "\n" + "Time of Ban: " + str(
-                    row[8]) + "\n" + "Ban ID: " + str(row[10]) + "\n" + "\n")
+        reports += ("Server: " + str(guildname) + " - Ban Type: "
+                    + str(row[6]) + "\n" + "Ban reason: " + str(row[4]) + "\n" + "Evidence: " + row[
+            5] + "\n" + "Ban Notes: " + row[7] + "\n" + "Time of Ban: " + str(
+                    row[8]) + " - Ban ID: " + str(row[10]) + "\n" + "\n")
     embed.add_field(name='User', value=str(user) + " - " + str(user.id), inline=True)
     embed.add_field(name='User notes', value=usernote, inline=False)
     if reports != "":
@@ -202,7 +202,6 @@ async def on_ready():
     global imagechannel, verificationchannel, theautobanlist, guild_ids
     guildinfo = conn.cursor()
     print(f'{bot.user} has connected to Discord!')
-
     for guild in bot.guilds:
         print(f'Connected to {guild.name}')
         guild_ids.append(guild.id)
@@ -219,7 +218,7 @@ async def on_ready():
     print(runningmodchannels)
     imagechannel = bot.get_channel(int(834577801449046046))
     verificationchannel = bot.get_channel(int(834726338182512682))
-    await bot.change_presence(activity=discord.Game(name="Run %setmodchannel to setup the bot"))
+    await bot.change_presence(activity=discord.Game(name="Run /setmodchannel to setup the bot"))
     guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
     rows = guildinfo.fetchall()
     for row in rows:
@@ -439,14 +438,40 @@ async def _communityban(ctx, userid, reason):
     await ctx.send("Community ban successful")
 
 
+@slash.slash(name='serverblock', description='blocks a server from being able to submit reports', guild_ids=[botadminguild],
+             options=[
+                 create_option(
+                     name="serverid",
+                     description="ID of the server",
+                     option_type=3,
+                     required=True
+                 ),
+                 create_option(
+                     name="reason",
+                     description="The reason for the server block",
+                     option_type=3,
+                     required=True
+                 )
+             ])
+@slash.permission(guild_id=botadminguild,
+                  permissions=[create_permission(botadminrole, SlashCommandPermissionType.ROLE, True)])
+async def _serverblock(ctx, serverid, reason):
+    await ctx.defer()
+    guildinfo = conn.cursor()
+    guildinfo.execute("SELECT * FROM reportList WHERE autoBan=1")
+
+
 @bot.event
 async def on_member_ban(guild, user):
     print("removed")
     modchannel = await fetch_modchan(guild)
     if modchannel is None:
         return
-    logs = await guild.audit_logs(limit=1, action=discord.AuditLogAction.ban).flatten()
-    logs = logs[0]
+    logs = await guild.audit_logs(limit=5, action=discord.AuditLogAction.ban).flatten()
+    try:
+        logs = logs[0]
+    except:
+        return
     if logs.user == bot.user:
         return
     banid = shortuuid.ShortUUID().random(length=22)
@@ -613,7 +638,7 @@ async def _autoban(ctx):
                                           "offences\nDo you want to continue?")
             try:
                 msg = await bot.wait_for("message", check=check, timeout=120)
-            except TimeoutError:
+            except:
                 return
             if msg.content.lower() == "y" or msg.content.lower() == "yes":
                 for row2 in rows2:
@@ -661,8 +686,13 @@ async def _report(ctx, user=None, userid=None):
     if modchannel is None:
         await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
         return
+<<<<<<< Updated upstream
     if user is None:
         await ctx.send("Invalid User", hidden=True)
+=======
+    if user is None and userid is None:
+        await ctx.send("Enter a user or user id")
+>>>>>>> Stashed changes
         return
 
     if not isinstance(user, str):
@@ -724,15 +754,20 @@ async def _info(ctx, user=None, userid=None):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send(hidden=True, content="You do not have the permissions to use that command")
         return
-    if user is None:
+    if user is None and userid is None:
         await ctx.send(hidden=True, content="Enter a user to use the command")
         return
     await ctx.defer()
     print("recieved")
     try:
         if not isinstance(user, str):
-            user = user.id
+            try:
+                user = user.id
+            except:
+                print("ok")
 
+        if userid is not None:
+            user = int(userid)
         userid = int(user)
         print("success")
         # dumb code, fix later
@@ -942,7 +977,7 @@ async def on_button_click(interaction):
 19 - Other""", ephemeral=True)
                     try:
                         msg = await bot.wait_for("message", check=check2, timeout=60)
-                    except TimeoutError:
+                    except:
                         return
                     if newEmbed.fields[2].value != "None":
                         embed_dict['color'] = 0xf1c40f
@@ -954,7 +989,7 @@ async def on_button_click(interaction):
                     await interaction.respond(content='Enter ban notes')
                     try:
                         msg = await bot.wait_for("message", check=check, timeout=120)
-                    except TimeoutError:
+                    except:
                         return
                     newEmbed = discord.Embed.from_dict(embed_dict)
                     newEmbed.set_field_at(5, name='Ban Notes', value=msg.content, inline=False)
@@ -992,7 +1027,7 @@ async def on_button_click(interaction):
                     await channel.send(str(user2) + " was banned from the server.")
             try:
                 await interaction.respond(type=6)
-            except discord.errors.NotFound:
+            except:
                 return
 
 
