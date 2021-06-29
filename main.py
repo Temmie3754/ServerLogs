@@ -669,39 +669,16 @@ async def _autoban(ctx):
         name="user",
         description="User to report",
         option_type=6,
-        required=False
-    ),
-    create_option(
-        name="userid",
-        description="ID of User to report",
-        option_type=3,
-        required=False
+        required=True
     )
 ])
-async def _report(ctx, user=None, userid=None):
+async def _report(ctx, user):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send("You do not have the permissions to use that command", hidden=True)
         return
     modchannel = await fetch_modchan(ctx.guild)
     if modchannel is None:
-        await ctx.send("You need to set the mod channel with %setmodchannel to use that", hidden=True)
-        return
-<<<<<<< Updated upstream
-    if user is None:
-        await ctx.send("Invalid User", hidden=True)
-=======
-    if user is None and userid is None:
-        await ctx.send("Enter a user or user id")
->>>>>>> Stashed changes
-        return
-
-    if not isinstance(user, str):
-        user = user.id
-    userid = int(user)
-    try:
-        user = await bot.fetch_user(userid)
-    except discord.NotFound:
-        await ctx.send("Invalid User ID", hidden=True)
+        await ctx.send("You need to set the mod channel with /setmodchannel to use that", hidden=True)
         return
     await ctx.defer()
     banid = shortuuid.ShortUUID().random(length=22)
@@ -741,34 +718,16 @@ You can press ❌ to cancel."""
         name="user",
         description="User to get info on",
         option_type=6,
-        required=False
-    ),
-    create_option(
-        name="userid",
-        description="ID of User to get info on",
-        option_type=3,
-        required=False
-    )
-])
-async def _info(ctx, user=None, userid=None):
+        required=True
+    )])
+async def _info(ctx, user):
     if not ctx.author.guild_permissions.ban_members:
         await ctx.send(hidden=True, content="You do not have the permissions to use that command")
-        return
-    if user is None and userid is None:
-        await ctx.send(hidden=True, content="Enter a user to use the command")
         return
     await ctx.defer()
     print("recieved")
     try:
-        if not isinstance(user, str):
-            try:
-                user = user.id
-            except:
-                print("ok")
-
-        if userid is not None:
-            user = int(userid)
-        userid = int(user)
+        userid = user.id
         print("success")
         # dumb code, fix later
         try:
@@ -904,7 +863,7 @@ async def on_button_click(interaction):
                     await interaction.respond(content='Enter a new ban reason')
                     try:
                         msg = await bot.wait_for("message", check=check, timeout=120)
-                    except TimeoutError:
+                    except:
                         return
                     if newEmbed.fields[4].value != "None":
                         embed_dict['color'] = 0xf1c40f
